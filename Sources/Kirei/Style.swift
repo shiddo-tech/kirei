@@ -44,6 +44,14 @@ enum Background: Codable, Hashable {
     case image(path: String)
     /// Base color plus up to three soft color blooms.
     case mesh([RGBA])
+
+    /// Smooth color ramps band in 8-bit exports unless a little noise dithers them.
+    var isSmooth: Bool {
+        switch self {
+        case .gradient, .mesh: return true
+        default: return false
+        }
+    }
 }
 
 enum WindowFrame: String, Codable, CaseIterable, Identifiable {
@@ -117,13 +125,15 @@ struct Style: Codable, Hashable {
     var watermark: String = ""
     /// 0...1 blur for image backgrounds.
     var backgroundBlur: Double = 0
+    /// Thin inner edge around the screenshot.
+    var hairline: Bool = true
 
     static let `default` = Style()
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case background, padding, inset, cornerRadius, shadow, aspect, alignment, autoBalance, frame, grain, watermark, backgroundBlur
+        case background, padding, inset, cornerRadius, shadow, aspect, alignment, autoBalance, frame, grain, watermark, backgroundBlur, hairline
     }
 
     // Presets saved by older versions lack the newer keys; synthesized decoding would drop them.
@@ -142,6 +152,7 @@ struct Style: Codable, Hashable {
         grain = try c.decodeIfPresent(Double.self, forKey: .grain) ?? d.grain
         watermark = try c.decodeIfPresent(String.self, forKey: .watermark) ?? d.watermark
         backgroundBlur = try c.decodeIfPresent(Double.self, forKey: .backgroundBlur) ?? d.backgroundBlur
+        hairline = try c.decodeIfPresent(Bool.self, forKey: .hairline) ?? d.hairline
     }
 }
 
@@ -151,13 +162,13 @@ enum Gradients {
         ["#4158D0", "#C850C0", "#FFCC70"],
         ["#0093E9", "#80D0C7"],
         ["#8EC5FC", "#E0C3FC"],
-        ["#FA8BFF", "#2BD2FF", "#2BFF88"],
+        ["#C9D6FF", "#E2E2E2"],
         ["#FBAB7E", "#F7CE68"],
-        ["#85FFBD", "#FFFB7D"],
+        ["#F6D5F7", "#FBE9D7"],
         ["#21D4FD", "#B721FF"],
         ["#08AEEA", "#2AF598"],
         ["#FEE140", "#FA709A"],
-        ["#3EECAC", "#EE74E1"],
+        ["#134E5E", "#71B280"],
         ["#FF3CAC", "#784BA0", "#2B86C5"],
         ["#667EEA", "#764BA2"],
         ["#F5F7FA", "#C3CFE2"],

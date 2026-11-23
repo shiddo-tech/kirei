@@ -1,5 +1,13 @@
 import AppKit
 import CoreImage
+import SwiftUI
+
+/// Continuous (squircle) corners, the same curve macOS uses for windows and icons.
+func squirclePath(_ rect: CGRect, radius: CGFloat) -> CGPath {
+    let r = max(0, min(radius, min(rect.width, rect.height) / 2))
+    guard r > 0 else { return CGPath(rect: rect, transform: nil) }
+    return RoundedRectangle(cornerRadius: r, style: .continuous).path(in: rect).cgPath
+}
 
 /// Geometry of the final composition, in output pixels (scale 1 = export size).
 struct CanvasLayout {
@@ -141,37 +149,54 @@ enum Renderer {
     static func drawComposition(source: CGImage, style: Style, layout: CanvasLayout, edgeColor: RGBA, ctx: CGContext) {
         let canvas = CGRect(origin: .zero, size: layout.canvasSize)
         drawBackground(style.background, in: canvas, blur: style.backgroundBlur, ctx: ctx)
-        if style.grain > 0, style.background != .none { drawGrain(in: canvas, amount: style.grain, ctx: ctx) }
+        if style.grain > 0, style.background != .none {
+            drawGrain(in: canvas, amount: style.grain, ctx: ctx)
+        } else if style.background.isSmooth {
+            drawGrain(in: canvas, amount: 0.05, ctx: ctx)
+        }
 
         let k = deviceScale(ctx)
+        // Two shadows, like real depth: a wide ambient one and a short contact one under the edge.
+        // Nested transparency layers draw the content once, so translucent pixels (window corners)
+        // don't darken from being composited twice.
+        let a = layout.shadowAlpha
         ctx.saveGState()
-        if layout.shadowAlpha > 0 {
-            ctx.setShadow(offset: CGSize(width: 0, height: -layout.shadowOffset * k),
-                          blur: layout.shadowBlur * k,
-                          color: CGColor(gray: 0, alpha: layout.shadowAlpha))
+        if a > 0 {
+            ctx.setShadow(offset: CGSize(width: 0, height: -layout.shadowOffset * 1.6 * k),
+                          blur: layout.shadowBlur * 1.25 * k,
+                          color: CGColor(gray: 0, alpha: a * 0.72))
+        }
+        ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+        if a > 0 {
+            let contact = max(1.5, layout.shadowBlur * 0.14)
+            ctx.setShadow(offset: CGSize(width: 0, height: -contact * 0.35 * k),
+                          blur: contact * k,
+                          color: CGColor(gray: 0, alpha: min(0.5, a * 0.55)))
         }
         ctx.beginTransparencyLayer(auxiliaryInfo: nil)
         if layout.chrome > 0 {
             drawWindowFrame(layout: layout, edgeColor: edgeColor, ctx: ctx)
         } else if layout.inset > 0 {
-            ctx.addPath(CGPath(roundedRect: layout.frameRect, cornerWidth: layout.corner,
-                               cornerHeight: layout.corner, transform: nil))
+            ctx.addPath(squirclePath(layout.frameRect, radius: layout.corner))
             ctx.setFillColor(edgeColor.cgColor)
             ctx.fillPath()
         }
         ctx.saveGState()
         if layout.chrome > 0 {
-            let fc = layout.frameCorner
-            ctx.addPath(CGPath(roundedRect: layout.frameRect, cornerWidth: fc, cornerHeight: fc, transform: nil))
+            ctx.addPath(squirclePath(layout.frameRect, radius: layout.frameCorner))
             ctx.clip()
         }
         let r = min(layout.imageCorner, min(layout.imageRect.width, layout.imageRect.height) / 2)
-        ctx.addPath(CGPath(roundedRect: layout.imageRect, cornerWidth: r, cornerHeight: r, transform: nil))
+        ctx.addPath(squirclePath(layout.imageRect, radius: r))
         ctx.clip()
         if let cropped = source.cropping(to: layout.crop.integral) {
             drawImage(cropped, in: layout.imageRect, ctx: ctx)
         }
         ctx.restoreGState()
+        if style.hairline, style.background != .none || layout.chrome > 0 || layout.inset > 0 {
+            drawHairline(layout: layout, edgeColor: edgeColor, ctx: ctx)
+        }
+        ctx.endTransparencyLayer()
         ctx.endTransparencyLayer()
         ctx.restoreGState()
 
@@ -180,12 +205,32 @@ enum Renderer {
         }
     }
 
+    /// A half-point inner edge keeps the screenshot separate from a background of a similar color.
+    static func drawHairline(layout: CanvasLayout, edgeColor: RGBA, ctx: CGContext) {
+        let outer = layout.chrome > 0 || layout.inset > 0
+        let rect = outer ? layout.frameRect : layout.imageRect
+        let radius = outer ? (layout.chrome > 0 ? layout.frameCorner : layout.corner)
+                           : min(layout.imageCorner, min(rect.width, rect.height) / 2)
+        let luminance = 0.2126 * edgeColor.r + 0.7152 * edgeColor.g + 0.0722 * edgeColor.b
+        let dark = layout.chrome > 0 ? layout.windowFrame.isDark : luminance < 0.5
+        let w = max(1, (max(rect.width, rect.height) / 1400).rounded())
+        let path = squirclePath(rect, radius: radius)
+        ctx.saveGState()
+        ctx.addPath(path)
+        ctx.clip()
+        ctx.addPath(path)
+        ctx.setLineWidth(w * 2)
+        ctx.setStrokeColor(dark ? CGColor(gray: 1, alpha: 0.14) : CGColor(gray: 0, alpha: 0.1))
+        ctx.strokePath()
+        ctx.restoreGState()
+    }
+
     /// Mockup window: title bar with traffic lights (and an address field for the browser look).
     static func drawWindowFrame(layout: CanvasLayout, edgeColor: RGBA, ctx: CGContext) {
         let f = layout.frameRect, h = layout.chrome, fc = layout.frameCorner
         let dark = layout.windowFrame.isDark
         ctx.saveGState()
-        ctx.addPath(CGPath(roundedRect: f, cornerWidth: fc, cornerHeight: fc, transform: nil))
+        ctx.addPath(squirclePath(f, radius: fc))
         ctx.clip()
         ctx.setFillColor(layout.inset > 0 ? edgeColor.cgColor : RGBA(hex: dark ? "#1E1E20" : "#FFFFFF").cgColor)
         ctx.fill(f)
@@ -217,7 +262,7 @@ enum Renderer {
         if layout.windowFrame.isBrowser {
             let w = min(f.width * 0.46, max(f.width * 0.3, h * 9))
             let field = CGRect(x: f.midX - w / 2, y: bar.midY - h * 0.29, width: w, height: h * 0.58)
-            ctx.addPath(CGPath(roundedRect: field, cornerWidth: field.height * 0.3, cornerHeight: field.height * 0.3, transform: nil))
+            ctx.addPath(squirclePath(field, radius: field.height * 0.3))
             ctx.setFillColor(RGBA(hex: dark ? "#1C1C1E" : "#FFFFFF", alpha: dark ? 0.9 : 0.95).cgColor)
             ctx.fillPath()
             let dot = field.height * 0.22
@@ -414,7 +459,7 @@ enum AnnotationRenderer {
             guard let img = (a.kind == .pixelate ? effects?.pixelated : effects?.blurred) else { return }
             let crop = layout.crop
             let r = layout.imageCorner
-            ctx.addPath(CGPath(roundedRect: crop, cornerWidth: r, cornerHeight: r, transform: nil))
+            ctx.addPath(squirclePath(crop, radius: r))
             ctx.clip()
             ctx.clip(to: a.rect)
             Renderer.drawImage(img, in: CGRect(x: 0, y: 0, width: img.width, height: img.height), ctx: ctx)

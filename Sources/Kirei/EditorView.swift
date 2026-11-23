@@ -581,6 +581,14 @@ private struct LayoutControls: View {
             SliderRow(L("Inset"), value: $style.inset, range: 0...0.08)
             SliderRow(L("Corners"), value: $style.cornerRadius, range: 0...0.05)
             SliderRow(L("Shadow"), value: $style.shadow, range: 0...1)
+
+            Toggle(isOn: $style.hairline) {
+                Text(L("Fine edge")).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .font(.callout)
+            .help(L("A thin line that separates the screenshot from the background"))
         }
     }
 }

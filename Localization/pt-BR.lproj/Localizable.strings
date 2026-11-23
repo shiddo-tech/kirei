@@ -215,3 +215,5 @@
 "macOS · Light" = "macOS · Claro";
 "Blur" = "Desfoque";
 "Blurs the background image" = "Desfoca a imagem de fundo";
+"Fine edge" = "Borda fina";
+"A thin line that separates the screenshot from the background" = "Uma linha fina que separa a captura do fundo";
