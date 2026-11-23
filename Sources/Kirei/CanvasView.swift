@@ -13,6 +13,9 @@ struct CanvasView: View {
     @State private var undoPending: String?
     @State private var marquee: CGRect?
     @State private var hoverID: UUID?
+    @State private var guideX: CGFloat?
+    @State private var guideY: CGFloat?
+    @State private var dragScale: CGFloat = 1
     @FocusState private var textFocused: Bool
 
     enum DragState {
@@ -185,6 +188,23 @@ struct CanvasView: View {
             }
         }
 
+        if guideX != nil || guideY != nil {
+            let c = viewRect(model.crop, layout: layout, fit: fit, scale: scale)
+            cg.saveGState()
+            cg.setStrokeColor(NSColor.systemPink.cgColor)
+            cg.setLineWidth(1)
+            if let x = guideX {
+                let vx = toView(CGPoint(x: x, y: 0), layout: layout, fit: fit, scale: scale).x
+                cg.move(to: CGPoint(x: vx, y: c.minY)); cg.addLine(to: CGPoint(x: vx, y: c.maxY))
+            }
+            if let y = guideY {
+                let vy = toView(CGPoint(x: 0, y: y), layout: layout, fit: fit, scale: scale).y
+                cg.move(to: CGPoint(x: c.minX, y: vy)); cg.addLine(to: CGPoint(x: c.maxX, y: vy))
+            }
+            cg.strokePath()
+            cg.restoreGState()
+        }
+
         if let m = marquee {
             let r = viewRect(m, layout: layout, fit: fit, scale: scale)
             cg.setFillColor(NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor)
@@ -325,6 +345,7 @@ struct CanvasView: View {
         let additive = flags.contains(.shift) || flags.contains(.command)
         let clicks = NSApp.currentEvent?.clickCount ?? 1
         drag = .idle
+        dragScale = scale
 
         if model.tool != .crop, let (a, i) = handleHit(p, tolerance: tol) {
             undoPending = L("Resize")
@@ -450,7 +471,8 @@ struct CanvasView: View {
             }
         case .moving(let starts, let origin, let duplicate, _):
             guard !duplicate else { break }
-            let d = CGSize(width: p.x - origin.x, height: p.y - origin.y)
+            var d = CGSize(width: p.x - origin.x, height: p.y - origin.y)
+            snap(&d, moving: starts)
             for start in starts {
                 model.update(start.id) { a in
                     a = start
@@ -487,6 +509,42 @@ struct CanvasView: View {
         }
     }
 
+    /// Smart guides: the moving group's edges and center snap to the screenshot's center and edges
+    /// and to the other annotations. Holding ⌘ moves freely.
+    private func snap(_ d: inout CGSize, moving starts: [Annotation]) {
+        let free = NSApp.currentEvent?.modifierFlags.contains(.command) ?? false
+        guard !free, let first = starts.first else {
+            guideX = nil; guideY = nil
+            return
+        }
+        let group = starts.dropFirst().reduce(first.bounds) { $0.union($1.bounds) }.offsetBy(dx: d.width, dy: d.height)
+        let ids = Set(starts.map(\.id))
+        let c = model.crop
+        var xs = [c.minX, c.midX, c.maxX], ys = [c.minY, c.midY, c.maxY]
+        for a in model.annotations where !ids.contains(a.id) {
+            let b = a.bounds
+            xs += [b.minX, b.midX, b.maxX]; ys += [b.minY, b.midY, b.maxY]
+        }
+        let tol = 6 / max(0.0001, dragScale)
+        func best(_ mine: [CGFloat], _ targets: [CGFloat]) -> (CGFloat, CGFloat)? {
+            var out: (CGFloat, CGFloat)?
+            for m in mine {
+                for t in targets where abs(t - m) <= tol && abs(t - m) < abs(out?.0 ?? .infinity) {
+                    out = (t - m, t)
+                }
+            }
+            return out
+        }
+        let sx = best([group.minX, group.midX, group.maxX], xs)
+        let sy = best([group.minY, group.midY, group.maxY], ys)
+        if let sx { d.width += sx.0 }
+        if let sy { d.height += sy.0 }
+        let engaged = (sx != nil && sx?.1 != guideX) || (sy != nil && sy?.1 != guideY)
+        if engaged { Haptics.align() }
+        guideX = sx?.1
+        guideY = sy?.1
+    }
+
     private func end(at p: CGPoint, moved: Bool, scale: CGFloat) {
         guard let drag else { return }
         switch drag {
@@ -508,6 +566,7 @@ struct CanvasView: View {
                 model.selection = a.kind == .counter ? [] : [id]
             }
         case .moving(_, _, _, let collapse):
+            guideX = nil; guideY = nil
             if !moved, let collapse { model.selection = [collapse] }
             undoPending = nil
             NSCursor.openHand.set()
