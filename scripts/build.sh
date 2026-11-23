@@ -101,12 +101,51 @@ if [ "$DMG" = 1 ]; then
   DMG_PATH="build/Kirei-${VERSION}.dmg"
   echo "→ Gerando ${DMG_PATH}…"
   STAGE="build/dmg"
-  rm -rf "$STAGE" "$DMG_PATH"
-  mkdir -p "$STAGE"
+  RW="build/Kirei-rw.dmg"
+  VOL="Kirei ${VERSION}"
+  rm -rf "$STAGE" "$DMG_PATH" "$RW"
+  mkdir -p "$STAGE/.background"
   cp -R "$APP" "$STAGE/"
   ln -s /Applications "$STAGE/Applications"
-  hdiutil create -volname "Kirei ${VERSION}" -srcfolder "$STAGE" -ov -format UDZO "$DMG_PATH" >/dev/null
+
+  # Window background: 1x + 2x in one TIFF so Finder picks the right one on Retina.
+  if [ ! -f build/dmg-background.tiff ] || [ scripts/make-dmg-background.swift -nt build/dmg-background.tiff ]; then
+    swift scripts/make-dmg-background.swift build/dmg-background@2x.png
+    sips -z 400 660 build/dmg-background@2x.png --out build/dmg-background.png >/dev/null
+    tiffutil -cathidpicheck build/dmg-background.png build/dmg-background@2x.png -out build/dmg-background.tiff >/dev/null
+  fi
+  cp build/dmg-background.tiff "$STAGE/.background/background.tiff"
+
+  hdiutil create -volname "$VOL" -srcfolder "$STAGE" -ov -format UDRW -fs HFS+ "$RW" >/dev/null
   rm -rf "$STAGE"
+  hdiutil detach "/Volumes/$VOL" -quiet 2>/dev/null || true
+  DEV="$(hdiutil attach -readwrite -noverify -noautoopen "$RW" | grep -E '^/dev/' | head -1 | awk '{print $1}')"
+  # Finder lays out the window (needs Automation permission for Finder once; without it the DMG still works).
+  osascript <<APPLESCRIPT || echo "  (aviso: não deu para ajustar a janela do DMG no Finder; seguindo sem o layout)"
+tell application "Finder"
+  tell disk "$VOL"
+    open
+    set current view of container window to icon view
+    set toolbar visible of container window to false
+    set statusbar visible of container window to false
+    set the bounds of container window to {200, 120, 860, 520}
+    set opts to the icon view options of container window
+    set arrangement of opts to not arranged
+    set icon size of opts to 112
+    set text size of opts to 13
+    set background picture of opts to file ".background:background.tiff"
+    set position of item "Kirei.app" of container window to {170, 190}
+    set position of item "Applications" of container window to {490, 190}
+    update without registering applications
+    delay 1
+    close
+  end tell
+end tell
+APPLESCRIPT
+  sync
+  hdiutil detach "$DEV" -quiet || hdiutil detach "$DEV" -force -quiet
+  hdiutil convert "$RW" -format UDZO -imagekey zlib-level=9 -o "$DMG_PATH" >/dev/null
+  rm -f "$RW"
   if [ -n "${DEVELOPER_ID:-}" ]; then
     codesign --force --timestamp --sign "$DEVELOPER_ID" "$DMG_PATH"
   fi

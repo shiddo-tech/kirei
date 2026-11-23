@@ -12,7 +12,21 @@ let ctx = gc.cgContext
 
 // Standard macOS icon body: 824pt square with the usual margin.
 let body = CGRect(x: 100, y: 100, width: 824, height: 824)
-let bodyPath = CGPath(roundedRect: body, cornerWidth: 185, cornerHeight: 185, transform: nil)
+// Continuous corners (superellipse), like Apple's icon grid; a plain rounded rect looks off next to other icons.
+func squircle(_ r: CGRect) -> CGPath {
+    let p = CGMutablePath()
+    let n: CGFloat = 5, a = r.width / 2, b = r.height / 2
+    for i in 0...720 {
+        let t = CGFloat(i) / 720 * 2 * .pi
+        let c = cos(t), s = sin(t)
+        let x = r.midX + a * (c < 0 ? -1 : 1) * pow(abs(c), 2 / n)
+        let y = r.midY + b * (s < 0 ? -1 : 1) * pow(abs(s), 2 / n)
+        if i == 0 { p.move(to: CGPoint(x: x, y: y)) } else { p.addLine(to: CGPoint(x: x, y: y)) }
+    }
+    p.closeSubpath()
+    return p
+}
+let bodyPath = squircle(body)
 
 let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
 func rgb(_ hex: UInt32, _ a: CGFloat = 1) -> CGColor {
@@ -48,7 +62,7 @@ ctx.restoreGState()
 ctx.saveGState()
 ctx.addPath(bodyPath)
 ctx.clip()
-ctx.addPath(CGPath(roundedRect: body.insetBy(dx: 3, dy: 3), cornerWidth: 182, cornerHeight: 182, transform: nil))
+ctx.addPath(squircle(body.insetBy(dx: 3, dy: 3)))
 ctx.setLineWidth(6)
 ctx.replacePathWithStrokedPath()
 ctx.clip()
