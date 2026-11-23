@@ -43,6 +43,7 @@ if [ ! -f build/AppIcon.icns ] || [ scripts/make-icon.swift -nt build/AppIcon.ic
   iconutil -c icns "$ICONSET" -o build/AppIcon.icns
 fi
 cp build/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp Resources/*.wav "$APP/Contents/Resources/"
 
 # Translations (en, pt-BR, es). pt.lproj covers Portuguese outside Brazil.
 cp -R Localization/*.lproj "$APP/Contents/Resources/"

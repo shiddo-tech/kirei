@@ -5,7 +5,9 @@ import SwiftUI
 enum Sounds {
     private static let rate = 44_100.0
 
-    static func playCapture() { play(capture) }
+    static func playCapture() {
+        play(AppSettings.shared.captureSound == .voice ? (voice ?? capture) : capture)
+    }
     static func playCopy() { play(copy) }
     static func playTick() { play(tick) }
 
@@ -14,6 +16,14 @@ enum Sounds {
         sound.stop()
         sound.play()
     }
+
+    /// Robotic "kirei" (vocoded Kyoko voice), made by scripts/make-voice.swift. Missing in debug runs.
+    private static let voice: NSSound? = {
+        guard let url = Bundle.main.url(forResource: "kirei-voice", withExtension: "wav"),
+              let s = NSSound(contentsOf: url, byReference: false) else { return nil }
+        s.volume = 0.6
+        return s
+    }()
 
     /// A soft two-part shutter: a filtered noise click followed by a lighter one.
     private static let capture: NSSound? = {

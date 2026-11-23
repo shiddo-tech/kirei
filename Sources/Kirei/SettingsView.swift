@@ -44,6 +44,11 @@ struct GeneralSettingsView: View {
                 }
                 Toggle(L("Hide sensitive data automatically"), isOn: $settings.autoRedact)
                 Toggle(L("Play sounds"), isOn: $settings.playSound)
+                Picker(L("Capture sound"), selection: $settings.captureSound) {
+                    ForEach(AppSettings.CaptureSound.allCases) { Text($0.title).tag($0) }
+                }
+                .disabled(!settings.playSound)
+                .onChange(of: settings.captureSound) { _, _ in Sounds.playCapture() }
                 Toggle(L("Keep capture history"), isOn: $settings.keepHistory)
             }
 
