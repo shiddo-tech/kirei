@@ -124,7 +124,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         guard let img = finalImage() else { return }
         Exporter.copy(img, scale: model.pixelScale)
         HUD.show(L("Image copied"))
-        if AppSettings.shared.playSound { NSSound(named: "Pop")?.play() }
+        Sounds.playCopy()
     }
 
     func saveQuick() {

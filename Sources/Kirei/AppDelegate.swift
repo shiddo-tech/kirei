@@ -106,6 +106,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func handle(_ captured: CapturedImage, from action: CaptureAction) {
+        if action != .clipboard {
+            Sounds.playCapture()
+            if let r = captured.screenRect { CaptureFeedback.flash(r) }
+        }
         if action == .text {
             ocr(captured)
         } else if AppSettings.shared.afterCapture == .copyStyled && action != .clipboard {
@@ -138,6 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let finish = {
             if let img = model.renderFinal() {
                 Exporter.copy(img, scale: captured.scale)
+                Sounds.playCopy()
                 HUD.show(L("Styled image copied"))
             }
         }

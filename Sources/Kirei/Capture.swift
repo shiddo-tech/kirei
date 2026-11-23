@@ -8,6 +8,8 @@ struct CapturedImage {
     let image: CGImage
     /// Pixels per point (2 on Retina).
     let scale: CGFloat
+    /// Where it was on screen, in Cocoa global coordinates; nil for images that didn't come from the screen.
+    var screenRect: CGRect? = nil
 }
 
 enum CaptureService {
@@ -94,7 +96,7 @@ enum CaptureService {
         let px = CGRect(x: x0 * s, y: y0 * s, width: max(1, x1 - x0) * s, height: max(1, y1 - y0) * s)
             .integral.intersection(CGRect(x: 0, y: 0, width: shot.image.width, height: shot.image.height))
         guard !px.isEmpty, let img = shot.image.cropping(to: px) else { return nil }
-        return CapturedImage(image: img, scale: s)
+        return CapturedImage(image: img, scale: s, screenRect: rect)
     }
 
     private static func shareableContent(_ done: @escaping (SCShareableContent?, Failure?) -> Void) {
@@ -130,7 +132,7 @@ enum CaptureService {
             config.height = max(1, Int((local.height * scale).rounded()))
             config.showsCursor = false
             config.captureResolution = .best
-            shoot(filter, config, scale: scale, completion: completion)
+            shoot(filter, config, scale: scale, screenRect: rect, completion: completion)
         }
     }
 
@@ -150,15 +152,19 @@ enum CaptureService {
             config.ignoreShadowsSingleWindow = true
             config.shouldBeOpaque = false
             config.captureResolution = .best
-            shoot(filter, config, scale: scale, completion: completion)
+            // SCWindow frames are top-left based on the primary display.
+            let primaryH = NSScreen.screens.first?.frame.height ?? 0
+            let f = window.frame
+            let rect = CGRect(x: f.minX, y: primaryH - f.maxY, width: f.width, height: f.height)
+            shoot(filter, config, scale: scale, screenRect: rect, completion: completion)
         }
     }
 
     private static func shoot(_ filter: SCContentFilter, _ config: SCStreamConfiguration, scale: CGFloat,
-                              completion: @escaping (Result<CapturedImage, Failure>?) -> Void) {
+                              screenRect: CGRect? = nil, completion: @escaping (Result<CapturedImage, Failure>?) -> Void) {
         SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) { image, error in
             if let image {
-                finish(.success(CapturedImage(image: image, scale: scale)), completion)
+                finish(.success(CapturedImage(image: image, scale: scale, screenRect: screenRect)), completion)
             } else {
                 NSLog("Kirei capture failed: \(String(describing: error))")
                 let declined = (error as NSError?)?.code == SCStreamError.userDeclined.rawValue

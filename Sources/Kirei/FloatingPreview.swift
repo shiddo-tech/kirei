@@ -33,6 +33,7 @@ final class FloatingPreview {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         let holder = PreviewImage()
+        let reveal = holder
         holder.image = model.renderFinal()
         if AppSettings.shared.autoRedact {
             model.autoRedact { [weak model] _ in holder.image = model?.renderFinal() }
@@ -51,17 +52,23 @@ final class FloatingPreview {
         )
         panel.contentView = NSHostingView(rootView: view)
 
-        let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
+        let anchor = captured.screenRect.map { CGPoint(x: $0.midX, y: $0.midY) } ?? NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { NSMouseInRect(anchor, $0.frame, false) } ?? NSScreen.main
         let f = screen?.visibleFrame ?? .zero
         let target = NSPoint(x: f.maxX - size.width - 20, y: f.minY + 20)
-        panel.setFrameOrigin(NSPoint(x: f.maxX + 10, y: target.y))
+        panel.setFrameOrigin(target)
         panel.alphaValue = 0
         panel.orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.32
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.2, 0.9, 0.25, 1)
-            panel.animator().setFrameOrigin(target)
-            panel.animator().alphaValue = 1
+        let showPanel = { [panel] in
+            panel.alphaValue = 1
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.68)) { reveal.shown = true }
+        }
+        if let from = captured.screenRect, from.width > 8, from.height > 8 {
+            // The image glides from where it was captured into the thumbnail.
+            let slot = CGRect(origin: target, size: size).insetBy(dx: 16, dy: 16)
+            CaptureFeedback.fly(captured.image, from: from, to: slot, done: showPanel)
+        } else {
+            showPanel()
         }
         scheduleDismiss()
     }
@@ -82,7 +89,7 @@ final class FloatingPreview {
     private func copy() {
         guard let img = model.renderFinal() else { return }
         Exporter.copy(img, scale: captured.scale)
-        if AppSettings.shared.playSound { NSSound(named: "Pop")?.play() }
+        Sounds.playCopy()
         HUD.show(L("Image copied"))
         close(animated: true)
     }
@@ -122,6 +129,7 @@ final class PreviewPanel: NSPanel {
 
 private final class PreviewImage: ObservableObject {
     @Published var image: CGImage?
+    @Published var shown = false
 }
 
 private struct FloatingPreviewView: View {
@@ -172,7 +180,9 @@ private struct FloatingPreviewView: View {
             }
         }
         .frame(width: 240, height: 168)
-        .kireiGlass(in: RoundedRectangle(cornerRadius: 16))
+        .kireiGlass(in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .scaleEffect(holder.shown ? 1 : 0.82, anchor: .bottomTrailing)
+        .opacity(holder.shown ? 1 : 0)
         .padding(4)
         .contentShape(Rectangle())
         .onHover { h in

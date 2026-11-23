@@ -43,7 +43,7 @@ struct GeneralSettingsView: View {
                     ForEach(AppSettings.AfterCapture.allCases) { Text($0.title).tag($0) }
                 }
                 Toggle(L("Hide sensitive data automatically"), isOn: $settings.autoRedact)
-                Toggle(L("Play sound when copying"), isOn: $settings.playSound)
+                Toggle(L("Play sounds"), isOn: $settings.playSound)
             }
 
             Section(L("Saving")) {
