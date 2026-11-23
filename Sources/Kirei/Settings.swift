@@ -44,7 +44,7 @@ final class PresetStore: ObservableObject {
 // MARK: - Hotkeys
 
 enum CaptureAction: String, CaseIterable, Codable, Identifiable {
-    case area, window, fullscreen, text, clipboard
+    case area, window, fullscreen, scrolling, record, text, clipboard
     var id: String { rawValue }
 
     var title: String {
@@ -52,6 +52,8 @@ enum CaptureAction: String, CaseIterable, Codable, Identifiable {
         case .area: return L("Capture Area")
         case .window: return L("Capture Window")
         case .fullscreen: return L("Capture Full Screen")
+        case .scrolling: return L("Scrolling Capture")
+        case .record: return L("Record Screen")
         case .text: return L("Capture Text (OCR)")
         case .clipboard: return L("Edit Image from Clipboard")
         }
@@ -62,6 +64,8 @@ enum CaptureAction: String, CaseIterable, Codable, Identifiable {
         case .area: return "rectangle.dashed"
         case .window: return "macwindow"
         case .fullscreen: return "display"
+        case .scrolling: return "arrow.up.and.down.text.horizontal"
+        case .record: return "record.circle"
         case .text: return "text.viewfinder"
         case .clipboard: return "doc.on.clipboard"
         }
@@ -79,6 +83,8 @@ struct HotKey: Codable, Equatable {
         .fullscreen: HotKey(keyCode: UInt32(kVK_ANSI_3), modifiers: UInt32(optionKey | shiftKey), display: "⌥⇧3"),
         .text: HotKey(keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(optionKey | shiftKey), display: "⌥⇧4"),
         .clipboard: HotKey(keyCode: UInt32(kVK_ANSI_5), modifiers: UInt32(optionKey | shiftKey), display: "⌥⇧5"),
+        .record: HotKey(keyCode: UInt32(kVK_ANSI_6), modifiers: UInt32(optionKey | shiftKey), display: "⌥⇧6"),
+        .scrolling: HotKey(keyCode: UInt32(kVK_ANSI_7), modifiers: UInt32(optionKey | shiftKey), display: "⌥⇧7"),
     ]
 
     static func carbonModifiers(_ f: NSEvent.ModifierFlags) -> UInt32 {

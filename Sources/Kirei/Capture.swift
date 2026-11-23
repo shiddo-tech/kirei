@@ -21,6 +21,8 @@ enum CaptureService {
         switch action {
         case .clipboard:
             completion(fromPasteboard().map { .success($0) })
+        case .record, .scrolling:
+            completion(nil) // handled by ScreenRecorder / ScrollingCapture
         case .fullscreen:
             let mouse = NSEvent.mouseLocation
             guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main else {
@@ -108,6 +110,45 @@ enum CaptureService {
             keep = content.windows.filter { $0.owningApplication?.processID == finder.processID && $0.windowLayer >= 0 }
         }
         return SCContentFilter(display: display, excludingApplications: excluded, exceptingWindows: keep)
+    }
+
+    /// Stream setup for recording the picked area or window. The rect is in Cocoa global coordinates.
+    static func recordingFilter(for selection: Selection,
+                                done: @escaping ((SCContentFilter, SCStreamConfiguration, CGRect)?) -> Void) {
+        shareableContent { content, _ in
+            let result: (SCContentFilter, SCStreamConfiguration, CGRect)? = {
+                guard let content else { return nil }
+                let config = SCStreamConfiguration()
+                config.minimumFrameInterval = CMTime(value: 1, timescale: 60)
+                config.showsCursor = true
+                config.pixelFormat = kCVPixelFormatType_32BGRA
+                config.queueDepth = 6
+                config.captureResolution = .best
+                switch selection {
+                case .area(let rect, let screen):
+                    guard let display = content.displays.first(where: { $0.displayID == displayID(of: screen) }) else { return nil }
+                    let s = screen.backingScaleFactor
+                    let x0 = (rect.minX - screen.frame.minX).rounded(), x1 = (rect.maxX - screen.frame.minX).rounded()
+                    let y0 = (screen.frame.maxY - rect.maxY).rounded(), y1 = (screen.frame.maxY - rect.minY).rounded()
+                    let local = CGRect(x: x0, y: y0, width: max(2, x1 - x0), height: max(2, y1 - y0))
+                    config.sourceRect = local
+                    config.width = Int(local.width * s)
+                    config.height = Int(local.height * s)
+                    return (displayFilter(display, content), config, rect)
+                case .window(let id):
+                    guard let window = content.windows.first(where: { $0.windowID == id }) else { return nil }
+                    let filter = SCContentFilter(desktopIndependentWindow: window)
+                    let s = CGFloat(filter.pointPixelScale)
+                    config.width = Int(window.frame.width * s)
+                    config.height = Int(window.frame.height * s)
+                    config.ignoreShadowsSingleWindow = true
+                    let primaryH = NSScreen.screens.first?.frame.height ?? 0
+                    let f = window.frame
+                    return (filter, config, CGRect(x: f.minX, y: primaryH - f.maxY, width: f.width, height: f.height))
+                }
+            }()
+            DispatchQueue.main.async { done(result) }
+        }
     }
 
     private static func shareableContent(_ done: @escaping (SCShareableContent?, Failure?) -> Void) {

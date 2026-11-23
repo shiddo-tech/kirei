@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         HotKeyManager.shared.handler = { [weak self] action in self?.perform(action) }
         HotKeyManager.shared.registerAll()
         Diagnostics.start()
+        ScreenRecorder.onChange = { [weak self] in self?.updateStatusIcon() }
 
         if !UserDefaults.standard.bool(forKey: "didOnboard") {
             UserDefaults.standard.set(true, forKey: "didOnboard")
@@ -41,9 +42,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         statusItem.menu = menu
     }
 
+    private func updateStatusIcon() {
+        if ScreenRecorder.isRecording {
+            statusItem.button?.image = NSImage(systemSymbolName: "stop.circle.fill", accessibilityDescription: L("Stop Recording"))
+            statusItem.button?.contentTintColor = .systemRed
+        } else {
+            statusItem.button?.image = KireiLogo.menuBarImage()
+            statusItem.button?.contentTintColor = nil
+        }
+    }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         guard menu === statusItem.menu else { return }
         menu.removeAllItems()
+        if ScreenRecorder.isRecording {
+            let stop = menu.addItem(withTitle: L("Stop Recording"), action: #selector(stopRecording(_:)), keyEquivalent: "")
+            stop.target = self
+            stop.image = NSImage(systemSymbolName: "stop.fill", accessibilityDescription: nil)
+            menu.addItem(.separator())
+        }
         for action in CaptureAction.allCases {
             let item = NSMenuItem(title: action.title, action: #selector(menuCapture(_:)), keyEquivalent: "")
             item.target = self
@@ -81,6 +98,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func perform(_ action: CaptureAction, timed: Bool = false) {
         if action != .clipboard, !CaptureService.hasScreenPermission, !requestPermission(retry: action) {
+            return
+        }
+        if action == .record {
+            if ScreenRecorder.isRecording { ScreenRecorder.stop() } else { ScreenRecorder.start() }
+            return
+        }
+        if action == .scrolling {
+            ScrollingCapture.start { [weak self] c in self?.handle(c, from: .scrolling) }
             return
         }
         let delay = AppSettings.shared.captureDelay
@@ -248,6 +273,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc func pasteImage(_ sender: Any?) { perform(.clipboard) }
 
     @objc func openHistory(_ sender: Any?) { HistoryWindow.show() }
+
+    @objc private func stopRecording(_ sender: Any?) { ScreenRecorder.stop() }
 
     @objc private func closePins(_ sender: Any?) { PinnedImage.closeAll() }
 

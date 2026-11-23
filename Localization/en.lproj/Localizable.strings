@@ -240,3 +240,17 @@
 "Clear History" = "Clear History";
 "Show in Finder" = "Show in Finder";
 "Double-click to edit" = "Double-click to edit";
+"Scrolling Capture" = "Scrolling Capture";
+"Record Screen" = "Record Screen";
+"Stop Recording" = "Stop Recording";
+"Stop" = "Stop";
+"Couldn't start recording" = "Couldn't start recording";
+"Nothing was recorded" = "Nothing was recorded";
+"Couldn't save the recording" = "Couldn't save the recording";
+"Save MP4" = "Save MP4";
+"Save GIF" = "Save GIF";
+"Video copied" = "Video copied";
+"Couldn't create the GIF" = "Couldn't create the GIF";
+"Scroll down slowly" = "Scroll down slowly";
+"%d pt captured" = "%d pt captured";
+"Done" = "Done";

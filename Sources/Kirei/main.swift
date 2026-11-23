@@ -12,6 +12,36 @@ if args.count == 5, args[1] == "--preview-test", let scale = Double(args[4]) {
     print("style:", model.style.background, "crop:", model.displayCrop, "out:", img.width, "x", img.height)
     exit(0)
 }
+// Developer self-test: `Kirei --scroll-test <tall.png> <out.png>` simulates a scroll with a sticky
+// header and footer over a tall image and stitches the frames back together.
+if args.count == 4, args[1] == "--scroll-test" {
+    guard let cap = CaptureService.load(url: URL(fileURLWithPath: args[2])) else { exit(1) }
+    let src = cap.image
+    let viewH = min(src.height / 2, 700), header = 60, footer = 40, w = src.width
+    var stitcher = Stitcher()
+    var offset = 0
+    var prevHashes: [UInt64]?
+    let steps = [0, 37, 120, 120, 0, 5, 300, 64, 220, 10, 400, 333]
+    for step in steps {
+        offset = min(offset + step, src.height - (viewH - header - footer))
+        guard let ctx = Renderer.makeContext(width: w, height: viewH) else { exit(1) }
+        // Window: fixed header, scrolled content, fixed footer (y-up drawing).
+        let content = src.cropping(to: CGRect(x: 0, y: offset, width: w, height: viewH - header - footer))!
+        ctx.setFillColor(CGColor(srgbRed: 0.1, green: 0.4, blue: 0.9, alpha: 1)); ctx.fill(CGRect(x: 0, y: viewH - header, width: w, height: header))
+        ctx.setFillColor(CGColor(srgbRed: 0.9, green: 0.3, blue: 0.2, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: w, height: footer))
+        ctx.draw(content, in: CGRect(x: 0, y: footer, width: w, height: viewH - header - footer))
+        let frame = ctx.makeImage()!
+        let hashes = ScrollingCapture.rowHashes(frame)
+        let m = prevHashes.map { ScrollingCapture.match($0, hashes) } ?? nil
+        let added = stitcher.add(ScrollingCapture.Frame(image: frame, hashes: hashes))
+        if added { prevHashes = hashes }
+        print("offset", offset, "match", m.map { "\($0)" } ?? "-", "added", added, "height", stitcher.height)
+    }
+    let out = stitcher.result()!
+    Exporter.save(out, scale: 1, to: URL(fileURLWithPath: args[3]), format: .png)
+    print("expected", offset + (viewH - header - footer) + header + footer, "got", out.height)
+    exit(0)
+}
 if args.count >= 4, args[1] == "--render-test" {
     guard let cap = CaptureService.load(url: URL(fileURLWithPath: args[2])) else { exit(1) }
     let style = args.count >= 5
