@@ -108,6 +108,10 @@ final class PinnedImage: NSObject, NSWindowDelegate {
         close()
     }
 
+    func windowWillClose(_ notification: Notification) {
+        PinnedImage.open.removeAll { $0 === self }
+    }
+
     func close() {
         let w = window
         NSAnimationContext.runAnimationGroup({ ctx in

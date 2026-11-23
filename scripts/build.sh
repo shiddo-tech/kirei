@@ -111,7 +111,7 @@ if [ "$DMG" = 1 ]; then
   # Window background: 1x + 2x in one TIFF so Finder picks the right one on Retina.
   if [ ! -f build/dmg-background.tiff ] || [ scripts/make-dmg-background.swift -nt build/dmg-background.tiff ]; then
     swift scripts/make-dmg-background.swift build/dmg-background@2x.png
-    sips -z 400 660 build/dmg-background@2x.png --out build/dmg-background.png >/dev/null
+    sips -z 400 660 -s dpiWidth 72 -s dpiHeight 72 build/dmg-background@2x.png --out build/dmg-background.png >/dev/null
     tiffutil -cathidpicheck build/dmg-background.png build/dmg-background@2x.png -out build/dmg-background.tiff >/dev/null
   fi
   cp build/dmg-background.tiff "$STAGE/.background/background.tiff"
@@ -121,7 +121,7 @@ if [ "$DMG" = 1 ]; then
   hdiutil detach "/Volumes/$VOL" -quiet 2>/dev/null || true
   DEV="$(hdiutil attach -readwrite -noverify -noautoopen "$RW" | grep -E '^/dev/' | head -1 | awk '{print $1}')"
   # Finder lays out the window (needs Automation permission for Finder once; without it the DMG still works).
-  osascript <<APPLESCRIPT || echo "  (aviso: não deu para ajustar a janela do DMG no Finder; seguindo sem o layout)"
+  osascript <<APPLESCRIPT 2>&1 || echo "  (aviso: não deu para ajustar a janela do DMG no Finder; seguindo sem o layout)"
 tell application "Finder"
   tell disk "$VOL"
     open

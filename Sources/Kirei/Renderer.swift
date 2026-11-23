@@ -193,7 +193,10 @@ enum Renderer {
             drawImage(cropped, in: layout.imageRect, ctx: ctx)
         }
         ctx.restoreGState()
-        if style.hairline, style.background != .none || layout.chrome > 0 || layout.inset > 0 {
+        // A window capture brings its own rounded, transparent corners; an edge drawn on our clip
+        // would show as a ghost arc outside them.
+        let ownCorners = layout.chrome == 0 && layout.inset == 0 && hasTransparentCorner(source, crop: layout.crop)
+        if style.hairline, !ownCorners, style.background != .none || layout.chrome > 0 || layout.inset > 0 {
             drawHairline(layout: layout, edgeColor: edgeColor, ctx: ctx)
         }
         ctx.endTransparencyLayer()
@@ -203,6 +206,16 @@ enum Renderer {
         if !style.watermark.trimmingCharacters(in: .whitespaces).isEmpty {
             drawWatermark(style.watermark, layout: layout, ctx: ctx)
         }
+    }
+
+    static func hasTransparentCorner(_ image: CGImage, crop: CGRect) -> Bool {
+        guard image.alphaInfo != .none, image.alphaInfo != .noneSkipFirst, image.alphaInfo != .noneSkipLast,
+              let px = image.cropping(to: CGRect(x: crop.minX.rounded(), y: crop.minY.rounded(), width: 1, height: 1)) else { return false }
+        var rgba = [UInt8](repeating: 0, count: 4)
+        guard let ctx = CGContext(data: &rgba, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4, space: colorSpace,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+        ctx.draw(px, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        return rgba[3] < 250
     }
 
     /// A half-point inner edge keeps the screenshot separate from a background of a similar color.

@@ -19,6 +19,7 @@ final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     private var border: NSWindow?
     private var controls: NSPanel?
     private let startDate = Date()
+    private var stopping = false
 
     // MARK: Start
 
@@ -115,7 +116,8 @@ final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     // MARK: Stop
 
     private func finish() {
-        guard ScreenRecorder.current === self else { return }
+        guard ScreenRecorder.current === self, !stopping else { return }
+        stopping = true
         let s = stream
         stream = nil
         s?.stopCapture { [weak self] _ in

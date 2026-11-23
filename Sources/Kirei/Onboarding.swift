@@ -9,7 +9,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
 
     init(step: Step, tryAnyway: (() -> Void)?) {
         state = OnboardingState(step: step, tryAnyway: tryAnyway)
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 460),
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 500),
                               styleMask: [.titled, .closable, .fullSizeContentView],
                               backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
@@ -21,7 +21,7 @@ final class OnboardingWindowController: NSWindowController, NSWindowDelegate {
         window.delegate = self
         state.close = { [weak window] in window?.performClose(nil) }
         window.contentViewController = NSHostingController(rootView: OnboardingView(state: state))
-        window.setContentSize(NSSize(width: 560, height: 460))
+        window.setContentSize(NSSize(width: 560, height: 500))
         window.center()
     }
 
@@ -107,7 +107,7 @@ private struct OnboardingView: View {
             .padding(.horizontal, 28)
             .padding(.bottom, 24)
         }
-        .frame(width: 560, height: 460)
+        .frame(width: 560, height: 500)
         .background(VisualEffect(material: .underWindowBackground))
         .animation(.spring(duration: 0.35), value: state.step)
     }
@@ -232,8 +232,8 @@ private struct ShortcutsStep: View {
     @ObservedObject var settings = AppSettings.shared
 
     var body: some View {
-        VStack(spacing: 14) {
-            Text(L("Your shortcuts")).font(.system(size: 24, weight: .bold)).padding(.top, 36)
+        VStack(spacing: 12) {
+            Text(L("Your shortcuts")).font(.system(size: 24, weight: .bold)).padding(.top, 28)
             Text(L("Kirei lives in the menu bar. Use these from any app:"))
                 .foregroundStyle(.secondary)
             VStack(spacing: 0) {
@@ -246,7 +246,7 @@ private struct ShortcutsStep: View {
                             .padding(.horizontal, 8).padding(.vertical, 3)
                             .background(Color.primary.opacity(0.08), in: RoundedRectangle(cornerRadius: 6))
                     }
-                    .padding(.vertical, 8)
+                    .padding(.vertical, 6)
                     .padding(.horizontal, 14)
                     if action != CaptureAction.allCases.last { Divider().padding(.leading, 14) }
                 }
