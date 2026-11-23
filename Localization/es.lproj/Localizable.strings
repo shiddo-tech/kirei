@@ -218,3 +218,11 @@
 "Fine edge" = "Borde fino";
 "A thin line that separates the screenshot from the background" = "Una línea fina que separa la captura del fondo";
 "Play sounds" = "Reproducir sonidos";
+"Export at Retina size (@2x)" = "Exportar en tamaño Retina (@2x)";
+"Off exports at 1 pixel per point: smaller files, less sharp" = "Desactivado exporta a 1 píxel por punto: archivos más pequeños, menos nítidos";
+"Keep capture history" = "Guardar historial de capturas";
+"Self-timer" = "Temporizador";
+"Off" = "Desactivado";
+"%d seconds" = "%d segundos";
+"Hide desktop icons" = "Ocultar iconos del escritorio";
+"Click to cancel" = "Haz clic para cancelar";

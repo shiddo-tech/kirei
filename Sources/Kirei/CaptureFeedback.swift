@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 
 /// Kirei's own sounds, synthesized once as WAV data so they need no resource files.
 enum Sounds {
@@ -6,6 +7,7 @@ enum Sounds {
 
     static func playCapture() { play(capture) }
     static func playCopy() { play(copy) }
+    static func playTick() { play(tick) }
 
     private static func play(_ sound: NSSound?) {
         guard AppSettings.shared.playSound, let sound else { return }
@@ -40,6 +42,11 @@ enum Sounds {
             return 0.32 * (note(1_318.5, 0) + note(1_975.5, 0.07))
         }
         return sound(samples, volume: 0.45)
+    }()
+
+    private static let tick: NSSound? = {
+        let samples = synth(duration: 0.05) { t in sin(2 * .pi * 2_400 * t) * exp(-t * 120) * 0.5 }
+        return sound(samples, volume: 0.35)
     }()
 
     private static func synth(duration: Double, _ f: (Double) -> Double) -> [Int16] {
@@ -129,5 +136,84 @@ enum CaptureFeedback {
         w.isReleasedWhenClosed = false
         w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         return w
+    }
+}
+
+/// Self-timer: a large count in the middle of the screen. Clicking it cancels.
+final class Countdown {
+    private static var current: Countdown?
+    private let panel: NSPanel
+    private let state = CountdownState()
+    private var timer: Timer?
+    private let done: () -> Void
+
+    static func start(seconds: Int, done: @escaping () -> Void) {
+        current?.cancel()
+        current = Countdown(seconds: seconds, done: done)
+    }
+
+    private init(seconds: Int, done: @escaping () -> Void) {
+        self.done = done
+        state.value = seconds
+        let size = NSSize(width: 168, height: 168)
+        panel = NSPanel(contentRect: NSRect(origin: .zero, size: size),
+                        styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.level = .statusBar
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.contentView = NSHostingView(rootView: CountdownView(state: state) { [weak self] in self?.cancel() })
+        let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
+        if let f = screen?.frame { panel.setFrameOrigin(NSPoint(x: f.midX - size.width / 2, y: f.midY - size.height / 2)) }
+        panel.orderFrontRegardless()
+        Sounds.playTick()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.tick() }
+    }
+
+    private func tick() {
+        guard state.value > 1 else { return finish() }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { state.value -= 1 }
+        Sounds.playTick()
+    }
+
+    private func finish() {
+        timer?.invalidate()
+        panel.orderOut(nil)
+        Countdown.current = nil
+        // Give the window server a frame to remove the panel before capturing.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: done)
+    }
+
+    private func cancel() {
+        timer?.invalidate()
+        panel.orderOut(nil)
+        Countdown.current = nil
+    }
+}
+
+private final class CountdownState: ObservableObject {
+    @Published var value = 0
+}
+
+private struct CountdownView: View {
+    @ObservedObject var state: CountdownState
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(state.value)")
+                .font(.system(size: 64, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .contentTransition(.numericText(countsDown: true))
+            Text(L("Click to cancel"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 150, height: 150)
+        .kireiGlass(in: Circle())
+        .contentShape(Circle())
+        .onTapGesture(perform: onCancel)
+        .frame(width: 168, height: 168)
     }
 }

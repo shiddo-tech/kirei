@@ -142,12 +142,12 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
         let settings = AppSettings.shared
         panel.nameFieldStringValue = Exporter.fileName(ext: Exporter.ext(settings.format))
         panel.directoryURL = settings.saveFolder
-        panel.allowedContentTypes = [.png, .jpeg]
+        panel.allowedContentTypes = AppSettings.Format.allCases.map(\.type)
         panel.isExtensionHidden = false
 
         let picker = NSPopUpButton(frame: .zero, pullsDown: false)
-        picker.addItems(withTitles: ["PNG", "JPEG"])
-        picker.selectItem(at: settings.format == .png ? 0 : 1)
+        picker.addItems(withTitles: AppSettings.Format.allCases.map(\.title))
+        picker.selectItem(at: AppSettings.Format.allCases.firstIndex(of: settings.format) ?? 0)
         let label = NSTextField(labelWithString: L("Format:"))
         let stack = NSStackView(views: [label, picker])
         stack.edgeInsets = NSEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
@@ -155,7 +155,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
         panel.beginSheetModal(for: window) { [weak self] resp in
             guard resp == .OK, var url = panel.url, let self else { return }
-            let format: AppSettings.Format = picker.indexOfSelectedItem == 0 ? .png : .jpeg
+            let format = AppSettings.Format.allCases[max(0, picker.indexOfSelectedItem)]
             url = url.deletingPathExtension().appendingPathExtension(Exporter.ext(format))
             if Exporter.save(img, scale: self.model.pixelScale, to: url, format: format) {
                 HUD.show(L("Image saved"), symbol: "folder.fill")

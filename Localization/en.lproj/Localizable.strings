@@ -218,3 +218,11 @@
 "Fine edge" = "Fine edge";
 "A thin line that separates the screenshot from the background" = "A thin line that separates the screenshot from the background";
 "Play sounds" = "Play sounds";
+"Export at Retina size (@2x)" = "Export at Retina size (@2x)";
+"Off exports at 1 pixel per point: smaller files, less sharp" = "Off exports at 1 pixel per point: smaller files, less sharp";
+"Keep capture history" = "Keep capture history";
+"Self-timer" = "Self-timer";
+"Off" = "Off";
+"%d seconds" = "%d seconds";
+"Hide desktop icons" = "Hide desktop icons";
+"Click to cancel" = "Click to cancel";

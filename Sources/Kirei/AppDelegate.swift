@@ -75,8 +75,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     // MARK: Capture flow
 
-    func perform(_ action: CaptureAction) {
+    func perform(_ action: CaptureAction, timed: Bool = false) {
         if action != .clipboard, !CaptureService.hasScreenPermission, !requestPermission(retry: action) {
+            return
+        }
+        let delay = AppSettings.shared.captureDelay
+        if delay > 0, [.area, .window, .fullscreen].contains(action), !timed {
+            Countdown.start(seconds: delay) { [weak self] in self?.perform(action, timed: true) }
             return
         }
         CaptureService.capture(action) { [weak self] result in

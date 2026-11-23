@@ -1,6 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 import ServiceManagement
+import UniformTypeIdentifiers
 
 struct Preset: Codable, Identifiable, Hashable {
     var id = UUID()
@@ -124,8 +125,18 @@ final class AppSettings: ObservableObject {
     }
 
     enum Format: String, CaseIterable, Identifiable {
-        case png, jpeg
+        case png, jpeg, heic
         var id: String { rawValue }
+        var title: String { rawValue.uppercased() }
+        var ext: String { self == .jpeg ? "jpg" : rawValue }
+        var type: UTType {
+            switch self {
+            case .png: return .png
+            case .jpeg: return .jpeg
+            case .heic: return .heic
+            }
+        }
+        var isLossy: Bool { self != .png }
     }
 
     @Published var hotKeys: [CaptureAction: HotKey] {
@@ -141,6 +152,12 @@ final class AppSettings: ObservableObject {
     @Published var format: Format { didSet { d.set(format.rawValue, forKey: "format") } }
     @Published var saveFolder: URL { didSet { d.set(saveFolder.path, forKey: "saveFolder") } }
     @Published var playSound: Bool { didSet { d.set(playSound, forKey: "playSound") } }
+    /// false exports at 1 pixel per point (half size on Retina).
+    @Published var exportRetina: Bool { didSet { d.set(exportRetina, forKey: "exportRetina") } }
+    /// Seconds to wait before a capture; 0 = immediately.
+    @Published var captureDelay: Int { didSet { d.set(captureDelay, forKey: "captureDelay") } }
+    @Published var hideDesktopIcons: Bool { didSet { d.set(hideDesktopIcons, forKey: "hideDesktopIcons") } }
+    @Published var keepHistory: Bool { didSet { d.set(keepHistory, forKey: "keepHistory") } }
 
     var launchAtLogin: Bool {
         get { SMAppService.mainApp.status == .enabled }
@@ -166,6 +183,10 @@ final class AppSettings: ObservableObject {
         autoRedact = d.bool(forKey: "autoRedact")
         format = Format(rawValue: d.string(forKey: "format") ?? "") ?? .png
         playSound = d.object(forKey: "playSound") as? Bool ?? true
+        exportRetina = d.object(forKey: "exportRetina") as? Bool ?? true
+        captureDelay = d.integer(forKey: "captureDelay")
+        hideDesktopIcons = d.bool(forKey: "hideDesktopIcons")
+        keepHistory = d.object(forKey: "keepHistory") as? Bool ?? true
         let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
         saveFolder = d.string(forKey: "saveFolder").map { URL(fileURLWithPath: $0) } ?? desktop
     }

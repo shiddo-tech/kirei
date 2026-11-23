@@ -44,6 +44,15 @@ struct GeneralSettingsView: View {
                 }
                 Toggle(L("Hide sensitive data automatically"), isOn: $settings.autoRedact)
                 Toggle(L("Play sounds"), isOn: $settings.playSound)
+                Toggle(L("Keep capture history"), isOn: $settings.keepHistory)
+            }
+
+            Section(L("Capture")) {
+                Picker(L("Self-timer"), selection: $settings.captureDelay) {
+                    Text(L("Off")).tag(0)
+                    ForEach([3, 5, 10], id: \.self) { Text(String(format: L("%d seconds"), $0)).tag($0) }
+                }
+                Toggle(L("Hide desktop icons"), isOn: $settings.hideDesktopIcons)
             }
 
             Section(L("Saving")) {
@@ -56,9 +65,10 @@ struct GeneralSettingsView: View {
                     Button(L("Change…"), action: chooseFolder)
                 }
                 Picker(L("Format"), selection: $settings.format) {
-                    Text("PNG").tag(AppSettings.Format.png)
-                    Text("JPEG").tag(AppSettings.Format.jpeg)
+                    ForEach(AppSettings.Format.allCases) { Text($0.title).tag($0) }
                 }
+                Toggle(L("Export at Retina size (@2x)"), isOn: $settings.exportRetina)
+                    .help(L("Off exports at 1 pixel per point: smaller files, less sharp"))
             }
 
             Section(L("System")) {

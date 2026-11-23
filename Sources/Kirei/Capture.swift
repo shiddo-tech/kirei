@@ -61,8 +61,6 @@ enum CaptureService {
         let screens = NSScreen.screens
         shareableContent { content, _ in
             guard let content else { return DispatchQueue.main.async { done([:]) } }
-            let me = ProcessInfo.processInfo.processIdentifier
-            let mine = content.applications.filter { $0.processID == me }
             let group = DispatchGroup()
             let lock = NSLock()
             var result: [CGDirectDisplayID: CapturedImage] = [:]
@@ -75,7 +73,7 @@ enum CaptureService {
                 config.height = max(1, Int((screen.frame.height * scale).rounded()))
                 config.showsCursor = false
                 config.captureResolution = .best
-                let filter = SCContentFilter(display: display, excludingApplications: mine, exceptingWindows: [])
+                let filter = displayFilter(display, content)
                 group.enter()
                 SCScreenshotManager.captureImage(contentFilter: filter, configuration: config) { image, _ in
                     if let image {
@@ -99,6 +97,19 @@ enum CaptureService {
         return CapturedImage(image: img, scale: s, screenRect: rect)
     }
 
+    /// Leaves Kirei's own windows out and, when asked, the Finder's desktop icons (but not its windows).
+    private static func displayFilter(_ display: SCDisplay, _ content: SCShareableContent) -> SCContentFilter {
+        let me = ProcessInfo.processInfo.processIdentifier
+        var excluded = content.applications.filter { $0.processID == me }
+        var keep: [SCWindow] = []
+        if AppSettings.shared.hideDesktopIcons,
+           let finder = content.applications.first(where: { $0.bundleIdentifier == "com.apple.finder" }) {
+            excluded.append(finder)
+            keep = content.windows.filter { $0.owningApplication?.processID == finder.processID && $0.windowLayer >= 0 }
+        }
+        return SCContentFilter(display: display, excludingApplications: excluded, exceptingWindows: keep)
+    }
+
     private static func shareableContent(_ done: @escaping (SCShareableContent?, Failure?) -> Void) {
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: true) { content, error in
             if let content { return done(content, nil) }
@@ -117,10 +128,7 @@ enum CaptureService {
             guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
                 return finish(.failure(.noDisplay), completion)
             }
-            let me = ProcessInfo.processInfo.processIdentifier
-            let filter = SCContentFilter(display: display,
-                                         excludingApplications: content.applications.filter { $0.processID == me },
-                                         exceptingWindows: [])
+            let filter = displayFilter(display, content)
             let config = SCStreamConfiguration()
             // Display-local points, top-left origin. Snapped to whole points: any fraction
             // (even a half point on Retina) makes ScreenCaptureKit resample and blur the image.
@@ -211,21 +219,31 @@ enum CaptureService {
 
 enum Exporter {
     static func data(_ image: CGImage, format: AppSettings.Format, scale: CGFloat) -> Data? {
+        let (image, scale) = sized(image, scale: scale)
         let data = NSMutableData()
-        let type = format == .png ? UTType.png : UTType.jpeg
-        guard let dest = CGImageDestinationCreateWithData(data, type.identifier as CFString, 1, nil) else { return nil }
+        guard let dest = CGImageDestinationCreateWithData(data, format.type.identifier as CFString, 1, nil) else { return nil }
         var props: [CFString: Any] = [
             kCGImagePropertyDPIWidth: 72 * scale,
             kCGImagePropertyDPIHeight: 72 * scale,
         ]
         var img = image
-        if format == .jpeg {
-            props[kCGImageDestinationLossyCompressionQuality] = 0.92
-            img = flattened(image) ?? image
-        }
+        if format.isLossy { props[kCGImageDestinationLossyCompressionQuality] = 0.92 }
+        if format == .jpeg { img = flattened(image) ?? image }
         CGImageDestinationAddImage(dest, img, props as CFDictionary)
         guard CGImageDestinationFinalize(dest) else { return nil }
         return data as Data
+    }
+
+    /// Applies the "Retina size" setting: off halves a 2x image to 1 pixel per point.
+    static func sized(_ image: CGImage, scale: CGFloat) -> (CGImage, CGFloat) {
+        guard !AppSettings.shared.exportRetina, scale > 1 else { return (image, scale) }
+        let w = max(1, Int((CGFloat(image.width) / scale).rounded()))
+        let h = max(1, Int((CGFloat(image.height) / scale).rounded()))
+        guard let ctx = Renderer.makeContext(width: w, height: h) else { return (image, scale) }
+        ctx.interpolationQuality = .high
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        guard let out = ctx.makeImage() else { return (image, scale) }
+        return (out, 1)
     }
 
     /// JPEG has no alpha: composite on white.
@@ -239,6 +257,7 @@ enum Exporter {
     }
 
     static func copy(_ image: CGImage, scale: CGFloat) {
+        let (image, scale) = sized(image, scale: scale)
         let pb = NSPasteboard.general
         pb.clearContents()
         let item = NSPasteboardItem()
@@ -255,7 +274,7 @@ enum Exporter {
         return "Kirei \(f.string(from: Date())).\(ext)"
     }
 
-    static func ext(_ format: AppSettings.Format) -> String { format == .png ? "png" : "jpg" }
+    static func ext(_ format: AppSettings.Format) -> String { format.ext }
 
     @discardableResult
     static func save(_ image: CGImage, scale: CGFloat, to url: URL, format: AppSettings.Format) -> Bool {
