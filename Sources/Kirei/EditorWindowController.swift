@@ -35,6 +35,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             share: { [weak self] v in self?.share(from: v) },
             copyText: { [weak self] in self?.copyText() },
             autoRedact: { [weak self] in self?.autoRedact() },
+            pin: { [weak self] in self?.pin() },
             dragFile: { [weak self] in self?.tempFile() }
         )
         window.setContentSize(NSSize(width: 1280, height: 820))
@@ -100,6 +101,7 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @objc func kireiSaveAs(_ sender: Any?) { saveAs() }
     @objc func kireiCopyText(_ sender: Any?) { copyText() }
     @objc func kireiRedact(_ sender: Any?) { autoRedact() }
+    @objc func kireiPin(_ sender: Any?) { pin() }
     @objc func kireiZoomIn(_ sender: Any?) { model.zoomIn() }
     @objc func kireiZoomOut(_ sender: Any?) { model.zoomOut() }
     @objc func kireiActualSize(_ sender: Any?) { model.zoomActualSize() }
@@ -118,6 +120,11 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     private func finalImage() -> CGImage? {
         model.editingTextID = nil
         return model.renderFinal()
+    }
+
+    func pin() {
+        guard let img = finalImage() else { return }
+        PinnedImage.pin(CapturedImage(image: img, scale: model.pixelScale))
     }
 
     func copyImage() {

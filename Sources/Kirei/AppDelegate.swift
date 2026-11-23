@@ -62,6 +62,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if action == .text { menu.addItem(.separator()) }
         }
         menu.addItem(withTitle: L("Open Image…"), action: #selector(openImage(_:)), keyEquivalent: "").target = self
+        menu.addItem(withTitle: L("Capture History…"), action: #selector(openHistory(_:)), keyEquivalent: "").target = self
+        if PinnedImage.count > 0 {
+            menu.addItem(withTitle: L("Close Pinned Images"), action: #selector(closePins(_:)), keyEquivalent: "").target = self
+        }
         menu.addItem(.separator())
         menu.addItem(withTitle: L("Settings…"), action: #selector(openSettingsAction(_:)), keyEquivalent: ",").target = self
         menu.addItem(withTitle: L("Quit Kirei"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -112,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func handle(_ captured: CapturedImage, from action: CaptureAction) {
         if action != .clipboard {
+            if action != .text { CaptureHistory.shared.add(captured) }
             Sounds.playCapture()
             if let r = captured.screenRect { CaptureFeedback.flash(r) }
         }
@@ -167,8 +172,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         c.window?.makeKeyAndOrderFront(nil)
     }
 
-    private func updateActivationPolicy() {
+    func updateActivationPolicy() {
         let hasWindows = !editors.isEmpty || (settingsWindow?.isVisible ?? false) || onboarding != nil
+            || HistoryWindow.isVisible
         if !hasWindows { NSApp.setActivationPolicy(.accessory) }
     }
 
@@ -241,6 +247,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc func pasteImage(_ sender: Any?) { perform(.clipboard) }
 
+    @objc func openHistory(_ sender: Any?) { HistoryWindow.show() }
+
+    @objc private func closePins(_ sender: Any?) { PinnedImage.closeAll() }
+
     @objc func openSettingsAction(_ sender: Any?) { openSettings() }
 
     func openSettings() {
@@ -286,6 +296,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         file.addItem(withTitle: L("Open Image…"), action: #selector(openImage(_:)), keyEquivalent: "o").target = self
         let paste = file.addItem(withTitle: L("New from Clipboard"), action: #selector(pasteImage(_:)), keyEquivalent: "n")
         paste.target = self
+        file.addItem(withTitle: L("Capture History…"), action: #selector(openHistory(_:)), keyEquivalent: "y").target = self
+        file.addItem(withTitle: L("Pin to Screen"), action: #selector(EditorWindowController.kireiPin(_:)), keyEquivalent: "p")
         file.addItem(.separator())
         file.addItem(withTitle: L("Save"), action: #selector(EditorWindowController.kireiSave(_:)), keyEquivalent: "s")
         file.addItem(withTitle: L("Save As…"), action: #selector(EditorWindowController.kireiSaveAs(_:)), keyEquivalent: "S")

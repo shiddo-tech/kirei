@@ -226,3 +226,17 @@
 "%d seconds" = "%d segundos";
 "Hide desktop icons" = "Ocultar iconos del escritorio";
 "Click to cancel" = "Haz clic para cancelar";
+"Capture History…" = "Historial de capturas…";
+"Capture History" = "Historial de capturas";
+"Close Pinned Images" = "Cerrar imágenes fijadas";
+"Pin to Screen" = "Fijar en pantalla";
+"Pin" = "Fijar";
+"Opacity" = "Opacidad";
+"Click Through" = "Dejar pasar los clics";
+"Click-through on. Close it from the menu bar." = "Los clics atraviesan la imagen. Ciérrala desde la barra de menús.";
+"No captures yet" = "Aún no hay capturas";
+"Your captures from the last 14 days show up here." = "Tus capturas de los últimos 14 días aparecen aquí.";
+"Turn on “Keep capture history” in Settings to see your captures here." = "Activa “Guardar historial de capturas” en Ajustes para ver tus capturas aquí.";
+"Clear History" = "Borrar historial";
+"Show in Finder" = "Mostrar en el Finder";
+"Double-click to edit" = "Haz doble clic para editar";

@@ -9,6 +9,7 @@ struct EditorActions {
     var share: (NSView) -> Void
     var copyText: () -> Void
     var autoRedact: () -> Void
+    var pin: () -> Void
     var dragFile: () -> URL?
 }
 
@@ -113,6 +114,7 @@ private struct ToolBar: View {
             Menu {
                 Button(L("Copy Text (OCR)"), action: actions.copyText)
                 Button(L("Hide Sensitive Data"), action: actions.autoRedact)
+                Button(L("Pin to Screen"), action: actions.pin)
                 Divider()
                 Button(L("Remove All Annotations")) { model.clearAnnotations() }
                     .disabled(model.annotations.isEmpty)

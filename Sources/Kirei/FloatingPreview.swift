@@ -43,6 +43,7 @@ final class FloatingPreview {
             onCopy: { [weak self] in self?.copy() },
             onSave: { [weak self] in self?.save() },
             onEdit: { [weak self] in self?.edit() },
+            onPin: { [weak self] in self?.pin() },
             onClose: { [weak self] in self?.close(animated: true) },
             onHover: { [weak self] h in self?.hoverChanged(h) },
             dragFile: { [weak self] in
@@ -104,6 +105,12 @@ final class FloatingPreview {
         close(animated: true)
     }
 
+    private func pin() {
+        guard let img = model.renderFinal() else { return }
+        PinnedImage.pin(CapturedImage(image: img, scale: captured.scale), near: captured.screenRect)
+        close(animated: true)
+    }
+
     private func edit() {
         close(animated: false)
         onEdit(captured)
@@ -137,6 +144,7 @@ private struct FloatingPreviewView: View {
     let onCopy: () -> Void
     let onSave: () -> Void
     let onEdit: () -> Void
+    let onPin: () -> Void
     let onClose: () -> Void
     let onHover: (Bool) -> Void
     let dragFile: () -> URL?
@@ -159,7 +167,10 @@ private struct FloatingPreviewView: View {
                         action(L("Copy"), "doc.on.doc", onCopy)
                         action(L("Save"), "square.and.arrow.down", onSave)
                     }
-                    action(L("Edit"), "slider.horizontal.3", onEdit)
+                    HStack(spacing: 8) {
+                        action(L("Edit"), "slider.horizontal.3", onEdit)
+                        action(L("Pin"), "pin", onPin)
+                    }
                 }
                 .transition(.opacity)
                 VStack {
