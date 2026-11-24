@@ -356,17 +356,27 @@ enum Renderer {
                 ctx.fill(rect)
                 return
             }
-            // Aspect fill.
-            let iw = CGFloat(img.width), ih = CGFloat(img.height)
-            let s = max(rect.width / iw, rect.height / ih)
-            let dw = iw * s, dh = ih * s
-            ctx.saveGState()
-            ctx.clip(to: rect)
-            drawImage(img, in: CGRect(x: rect.midX - dw / 2, y: rect.midY - dh / 2, width: dw, height: dh), ctx: ctx)
-            ctx.restoreGState()
+            drawAspectFill(img, in: rect, ctx: ctx)
         case .mesh(let colors):
             drawMesh(colors, in: rect, ctx: ctx)
+        case .art(let art):
+            let k = deviceScale(ctx)
+            guard let img = ArtCache.shared.image(art, for: CGSize(width: rect.width * k, height: rect.height * k)) else { return }
+            ctx.saveGState()
+            ctx.interpolationQuality = .high
+            drawAspectFill(img, in: rect, ctx: ctx)
+            ctx.restoreGState()
         }
+    }
+
+    private static func drawAspectFill(_ img: CGImage, in rect: CGRect, ctx: CGContext) {
+        let iw = CGFloat(img.width), ih = CGFloat(img.height)
+        let s = max(rect.width / iw, rect.height / ih)
+        let dw = iw * s, dh = ih * s
+        ctx.saveGState()
+        ctx.clip(to: rect)
+        drawImage(img, in: CGRect(x: rect.midX - dw / 2, y: rect.midY - dh / 2, width: dw, height: dh), ctx: ctx)
+        ctx.restoreGState()
     }
 
     /// A mesh-gradient look built from soft radial blooms, so it also renders on macOS 14 and in exports.

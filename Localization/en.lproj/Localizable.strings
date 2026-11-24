@@ -61,7 +61,6 @@
 "Format:" = "Format:";
 "Get Started" = "Get Started";
 "Global Shortcuts" = "Global Shortcuts";
-"Gradient" = "Gradient";
 "Grant Permission…" = "Grant Permission…";
 "Hide Data" = "Hide Data";
 "Hide Kirei" = "Hide Kirei";
@@ -196,7 +195,6 @@
 "Kirei can capture your screen. You're all set." = "Kirei can capture your screen. You're all set.";
 "Kirei lives in the menu bar. Use these from any app:" = "Kirei lives in the menu bar. Use these from any app:";
 "Kirei needs this permission to capture the screen. Nothing leaves your Mac." = "Kirei needs this permission to capture the screen. Nothing leaves your Mac.";
-"Mesh" = "Mesh";
 "Open System Settings › Privacy & Security › Screen & System Audio Recording." = "Open System Settings › Privacy & Security › Screen & System Audio Recording.";
 "Restart Kirei" = "Restart Kirei";
 "Restart Kirei so macOS applies the permission." = "Restart Kirei so macOS applies the permission.";
@@ -257,3 +255,15 @@
 "Capture sound" = "Capture sound";
 "Voice “kirei”" = "Voice “kirei”";
 "Shutter" = "Shutter";
+"Click again to switch" = "Click again to switch";
+"Color and thickness" = "Color and thickness";
+"Advanced" = "Advanced";
+"More options" = "More options";
+"Show More" = "Show More";
+"Show Less" = "Show Less";
+"Show Inspector" = "Show Inspector";
+"Hide Inspector" = "Hide Inspector";
+"Show or hide inspector" = "Show or hide inspector";
+"Art" = "Art";
+"Vary" = "Vary";
+"Keeps the colors and draws new shapes" = "Keeps the colors and draws new shapes";

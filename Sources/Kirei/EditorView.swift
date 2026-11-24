@@ -18,6 +18,9 @@ struct EditorView: View {
     let actions: EditorActions
     /// Height of the transparent title bar the top rows sit in.
     var barHeight: CGFloat = 52
+    @AppStorage(EditorView.inspectorKey) private var showsInspector = true
+
+    static let inspectorKey = "inspector.visible"
 
     var body: some View {
         HStack(spacing: 0) {
@@ -45,71 +48,77 @@ struct EditorView: View {
                 Divider()
                 BottomBar(model: model, actions: actions)
             }
-            Divider()
-            Inspector(model: model, barHeight: barHeight)
-                .frame(width: 284)
+            if showsInspector {
+                HStack(spacing: 0) {
+                    Divider()
+                    Inspector(model: model, barHeight: barHeight)
+                        .frame(width: 284)
+                }
+                .transition(.move(edge: .trailing))
+            }
         }
+        .animation(.easeOut(duration: 0.2), value: showsInspector)
         .ignoresSafeArea(.container, edges: .top)
     }
 }
 
 // MARK: - Top toolbar
 
+/// Similar tools share one toolbar slot; clicking the active slot again switches between them.
+private enum ToolGroup: CaseIterable {
+    case select, arrow, shape, highlight, text, counter, redact, crop
+
+    var tools: [Tool] {
+        switch self {
+        case .select: return [.select]
+        case .arrow: return [.arrow]
+        case .shape: return [.rect, .ellipse]
+        case .highlight: return [.highlight]
+        case .text: return [.text]
+        case .counter: return [.counter]
+        case .redact: return [.pixelate, .blur]
+        case .crop: return [.crop]
+        }
+    }
+
+    static func containing(_ tool: Tool) -> ToolGroup? {
+        allCases.first { $0.tools.contains(tool) }
+    }
+}
+
+private extension Tool {
+    var usesColor: Bool {
+        switch self {
+        case .arrow, .rect, .ellipse, .highlight, .text, .counter: return true
+        case .select, .pixelate, .blur, .crop: return false
+        }
+    }
+}
+
 private struct ToolBar: View {
     @ObservedObject var model: EditorModel
     let actions: EditorActions
+    @State private var lastInGroup: [ToolGroup: Tool] = [:]
+    @AppStorage(EditorView.inspectorKey) private var showsInspector = true
+
+    private var showsStyle: Bool { model.tool.usesColor || !model.selection.isEmpty }
 
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 2) {
-                ForEach(Tool.allCases) { t in
-                    Button { model.tool = t } label: {
-                        Image(systemName: t.symbol)
-                            .font(.system(size: 14, weight: .medium))
-                            .frame(width: 30, height: 26)
-                            .background(model.tool == t ? Color.accentColor.opacity(0.2) : .clear,
-                                        in: RoundedRectangle(cornerRadius: 6))
-                            .foregroundStyle(model.tool == t ? Color.accentColor : .primary)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(t.title)
+                ForEach(ToolGroup.allCases, id: \.self) { g in
+                    ToolGroupButton(group: g,
+                                    current: g.tools.contains(model.tool) ? model.tool : (lastInGroup[g] ?? g.tools[0]),
+                                    active: g.tools.contains(model.tool)) { model.tool = $0 }
                 }
             }
 
-            Divider().frame(height: 20)
-
-            HStack(spacing: 5) {
-                ForEach(Palette.annotation, id: \.self) { c in
-                    Button { model.applyColorToSelection(c) } label: {
-                        Circle().fill(c.color)
-                            .overlay(Circle().strokeBorder(.primary.opacity(0.25), lineWidth: 0.5))
-                            .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 2)
-                                .padding(-3).opacity(model.color == c ? 1 : 0))
-                            .frame(width: 16, height: 16)
-                    }
-                    .buttonStyle(.plain)
-                }
-                CustomColorButton(current: model.color) { model.applyColorToSelection($0) }
-                    .padding(.leading, 2)
+            if showsStyle {
+                AnnotationStyleButton(model: model)
+                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
             }
-
-            Picker("", selection: Binding(get: { model.strokeLevel }, set: { model.applyStrokeToSelection($0) })) {
-                Image(systemName: "line.diagonal").tag(0)
-                Image(systemName: "line.diagonal").fontWeight(.bold).tag(1)
-                Image(systemName: "line.diagonal").fontWeight(.black).tag(2)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 96)
-            .help(L("Thickness / text size"))
 
             Spacer(minLength: 4)
-
-            Button { model.undoManager?.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .help(L("Undo (⌘Z)"))
-            Button { model.undoManager?.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .help(L("Redo (⇧⌘Z)"))
 
             Menu {
                 Button(L("Copy Text (OCR)"), action: actions.copyText)
@@ -124,11 +133,119 @@ private struct ToolBar: View {
                 Image(systemName: "wand.and.stars")
             }
             .menuStyle(.borderlessButton)
-            .frame(width: 36)
+            .menuIndicator(.hidden)
+            .fixedSize()
             .help(L("Smart tools"))
+
+            MoreMenu(model: model)
+
+            Button { showsInspector.toggle() } label: {
+                Image(systemName: "sidebar.right")
+            }
+            .buttonStyle(.borderless)
+            .help(L(showsInspector ? "Hide Inspector" : "Show Inspector") + " (⌥⌘I)")
         }
         .padding(.leading, 84)
-        .padding(.trailing, 12)
+        .padding(.trailing, 14)
+        .animation(.easeOut(duration: 0.15), value: showsStyle)
+        .onChange(of: model.tool) {
+            if let g = ToolGroup.containing(model.tool) { lastInGroup[g] = model.tool }
+        }
+    }
+}
+
+private struct ToolGroupButton: View {
+    let group: ToolGroup
+    let current: Tool
+    let active: Bool
+    let select: (Tool) -> Void
+
+    private var isGroup: Bool { group.tools.count > 1 }
+
+    var body: some View {
+        Button {
+            if active, isGroup, let i = group.tools.firstIndex(of: current) {
+                select(group.tools[(i + 1) % group.tools.count])
+            } else {
+                select(current)
+            }
+        } label: {
+            Image(systemName: current.symbol)
+                .font(.system(size: 14, weight: .medium))
+                .frame(width: 30, height: 26)
+                .overlay(alignment: .bottomTrailing) {
+                    if isGroup {
+                        CornerMark()
+                            .fill(.secondary)
+                            .frame(width: 4, height: 4)
+                            .padding(3)
+                    }
+                }
+                .background(active ? Color.primary.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                .foregroundStyle(active ? .primary : .secondary)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(isGroup ? "\(current.title) · \(L("Click again to switch"))" : current.title)
+        .contextMenu {
+            if isGroup {
+                ForEach(group.tools) { t in Button(t.title) { select(t) } }
+            }
+        }
+    }
+}
+
+private struct CornerMark: Shape {
+    func path(in r: CGRect) -> Path {
+        Path { p in
+            p.move(to: CGPoint(x: r.maxX, y: r.minY))
+            p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+            p.addLine(to: CGPoint(x: r.minX, y: r.maxY))
+            p.closeSubpath()
+        }
+    }
+}
+
+private struct AnnotationStyleButton: View {
+    @ObservedObject var model: EditorModel
+    @State private var open = false
+
+    var body: some View {
+        Button { open.toggle() } label: {
+            Circle().fill(model.color.color)
+                .overlay(Circle().strokeBorder(.primary.opacity(0.25), lineWidth: 0.5))
+                .frame(width: 16, height: 16)
+                .padding(5)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(L("Color and thickness"))
+        .popover(isPresented: $open, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(spacing: 8) {
+                    ForEach(Palette.annotation, id: \.self) { c in
+                        Button { model.applyColorToSelection(c) } label: {
+                            Circle().fill(c.color)
+                                .overlay(Circle().strokeBorder(.primary.opacity(0.25), lineWidth: 0.5))
+                                .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: 2)
+                                    .padding(-3).opacity(model.color == c ? 1 : 0))
+                                .frame(width: 20, height: 20)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    CustomColorButton(current: model.color, size: 20) { model.applyColorToSelection($0) }
+                }
+                Picker("", selection: Binding(get: { model.strokeLevel }, set: { model.applyStrokeToSelection($0) })) {
+                    Image(systemName: "line.diagonal").tag(0)
+                    Image(systemName: "line.diagonal").fontWeight(.bold).tag(1)
+                    Image(systemName: "line.diagonal").fontWeight(.black).tag(2)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .help(L("Thickness / text size"))
+            }
+            .padding(16)
+        }
     }
 }
 
@@ -136,6 +253,7 @@ private struct ToolBar: View {
 /// well is wider than its frame on recent macOS and draws over neighboring swatches.
 private struct CustomColorButton: View {
     let current: RGBA
+    var size: CGFloat = 16
     let onChange: (RGBA) -> Void
 
     var body: some View {
@@ -146,7 +264,7 @@ private struct CustomColorButton: View {
                 .fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, .purple, .red],
                                       center: .center))
                 .overlay(Circle().strokeBorder(.primary.opacity(0.25), lineWidth: 0.5))
-                .frame(width: 16, height: 16)
+                .frame(width: size, height: size)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -182,43 +300,88 @@ private struct BottomBar: View {
 
     var body: some View {
         let size = model.layout.canvasSize
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             DragThumbnail(model: model, dragFile: actions.dragFile)
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text("\(Int(size.width)) × \(Int(size.height)) px")
-                    .font(.callout.monospacedDigit().weight(.medium))
-                Text(L("Drag the thumbnail to any app"))
-                    .font(.caption)
+            HStack(spacing: 10) {
+                Text("\(Int(size.width)) × \(Int(size.height))")
+                    .font(.system(size: 11, weight: .medium).monospacedDigit())
                     .foregroundStyle(.secondary)
+                BarHairline()
+                ZoomControl(model: model)
             }
-
-            ZoomControl(model: model)
-                .padding(.leading, 4)
+            .padding(.horizontal, 12)
+            .frame(height: 26)
+            .background(Capsule().fill(.primary.opacity(0.045)))
 
             Spacer()
 
-            ShareButton(action: actions.share)
-                .frame(width: 34, height: 24)
-            Menu {
-                Button(L("Save As…"), action: actions.saveAs)
-            } label: {
-                Label(L("Save"), systemImage: "square.and.arrow.down")
-            } primaryAction: {
-                actions.save()
+            HStack(spacing: 0) {
+                ShareButton(action: actions.share)
+                    .frame(width: 32, height: 28)
+                BarHairline()
+                Menu {
+                    Button(L("Save As…"), action: actions.saveAs)
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                } primaryAction: {
+                    actions.save()
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .frame(width: 32, height: 28)
+                .help(L("Save to the default folder (⌘S)"))
             }
-            .fixedSize()
-            .help(L("Save to the default folder (⌘S)"))
+            .padding(.horizontal, 2)
+            .background(Capsule().fill(.primary.opacity(0.045)))
+            .foregroundStyle(.secondary)
+
             Button(action: actions.copy) {
-                Label(L("Copy"), systemImage: "doc.on.doc")
-                    .padding(.horizontal, 6)
+                HStack(spacing: 6) {
+                    Text(L("Copy"))
+                    Text("⌘C")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .opacity(0.6)
+                }
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(CopyPillStyle())
             .help(L("Copy image (⌘C)"))
         }
-        .controlSize(.large)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
         .frame(height: 56)
+        .background(alignment: .top) {
+            LinearGradient(colors: [.primary.opacity(0.025), .clear], startPoint: .top, endPoint: .bottom)
+        }
+    }
+}
+
+private struct BarHairline: View {
+    var body: some View {
+        Rectangle()
+            .fill(.primary.opacity(0.12))
+            .frame(width: 0.5, height: 12)
+    }
+}
+
+private struct CopyPillStyle: ButtonStyle {
+    @State private var hovering = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background {
+                Capsule()
+                    .fill(Color.accentColor.opacity(configuration.isPressed ? 0.2 : hovering ? 0.16 : 0.12))
+            }
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeOut(duration: 0.15), value: hovering)
+            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
+            .onHover { hovering = $0 }
+            .contentShape(Capsule())
     }
 }
 
@@ -271,27 +434,23 @@ private struct ZoomControl: View {
     @ObservedObject var model: EditorModel
 
     var body: some View {
-        HStack(spacing: 2) {
-            Button { model.zoomOut() } label: { Image(systemName: "minus.magnifyingglass") }
-                .help(L("Zoom Out") + " (⌘−)")
-            Menu {
-                Button(L("Fit in Window")) { model.zoomToFit() }
-                Divider()
-                ForEach(EditorModel.zoomSteps, id: \.self) { z in
-                    Button("\(Int((z * 100).rounded()))%") { model.zoom = z }
-                }
-            } label: {
-                Text(model.zoom == nil ? L("Fit") : "\(Int((model.effectiveZoom * 100).rounded()))%")
-                    .monospacedDigit()
-                    .frame(minWidth: 52)
+        Menu {
+            Button(L("Zoom In") + " (⌘+)") { model.zoomIn() }
+            Button(L("Zoom Out") + " (⌘−)") { model.zoomOut() }
+            Button(L("Fit in Window")) { model.zoomToFit() }
+            Divider()
+            ForEach(EditorModel.zoomSteps, id: \.self) { z in
+                Button("\(Int((z * 100).rounded()))%") { model.zoom = z }
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .help(L("100% shows each captured pixel as one screen pixel (⌘0)"))
-            Button { model.zoomIn() } label: { Image(systemName: "plus.magnifyingglass") }
-                .help(L("Zoom In") + " (⌘+)")
+        } label: {
+            Text(model.zoom == nil ? L("Fit") : "\(Int((model.effectiveZoom * 100).rounded()))%")
+                .font(.caption.monospacedDigit())
         }
-        .buttonStyle(.borderless)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(.secondary)
+        .help(L("100% shows each captured pixel as one screen pixel (⌘0)"))
     }
 }
 
@@ -302,7 +461,7 @@ struct ShareButton: NSViewRepresentable {
     func makeNSView(context: Context) -> NSButton {
         let b = NSButton(image: NSImage(systemSymbolName: "square.and.arrow.up", accessibilityDescription: L("Share"))!,
                          target: context.coordinator, action: #selector(Coordinator.click(_:)))
-        b.bezelStyle = .push
+        b.isBordered = false
         b.toolTip = L("Share")
         return b
     }
@@ -325,71 +484,115 @@ private struct Inspector: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            InspectorHeader(model: model)
+            Color.clear
                 .frame(height: barHeight)
                 .background(WindowDragArea())
             Divider()
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 24) {
                     section(L("Styles")) { StyleGallery(model: model) }
-                    Divider()
                     section(L("Background")) { BackgroundPicker(style: $model.style) }
-                    Divider()
-                    section(L("Frame")) { FrameControls(style: $model.style) }
-                    Divider()
-                    section(L("Layout")) { LayoutControls(style: $model.style) }
+                    VStack(alignment: .leading, spacing: 16) {
+                        CollapsibleSection(L("Frame"), key: "frame", summary: model.style.frame.title) {
+                            FrameControls(style: $model.style)
+                        }
+                        CollapsibleSection(L("Layout"), key: "layout",
+                                           summary: model.style.aspect.label.components(separatedBy: " · ")[0]) {
+                            LayoutControls(style: $model.style)
+                        }
+                        CollapsibleSection(L("Advanced"), key: "advanced") {
+                            AdvancedControls(style: $model.style)
+                        }
+                    }
                 }
-                .padding(14)
+                .padding(16)
             }
         }
         .background(VisualEffect(material: .sidebar))
     }
 
     private func section<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title.uppercased())
-                .font(.caption.weight(.semibold))
-                .tracking(0.6)
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(.callout.weight(.semibold))
             content()
         }
     }
 }
 
-private struct InspectorHeader: View {
+/// Open/closed state is remembered between sessions.
+private struct CollapsibleSection<Content: View>: View {
+    let title: String
+    let summary: String?
+    let content: Content
+    @AppStorage private var expanded: Bool
+
+    init(_ title: String, key: String, summary: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.summary = summary
+        self.content = content()
+        _expanded = AppStorage(wrappedValue: false, "inspector.expanded.\(key)")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button { withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() } } label: {
+                HStack(spacing: 6) {
+                    Text(title).font(.callout.weight(.semibold))
+                    Spacer(minLength: 8)
+                    if !expanded, let summary {
+                        Text(summary)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if expanded {
+                content.transition(.opacity)
+            }
+        }
+    }
+}
+
+private struct MoreMenu: View {
     @ObservedObject var model: EditorModel
     @State private var showingShortcuts = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(L("Style")).font(.headline)
-            Spacer()
-            Button { model.style = .default } label: {
-                Image(systemName: "arrow.counterclockwise").frame(width: 24, height: 24)
-            }
-            .help(L("Restore Default"))
-            Button { showingShortcuts.toggle() } label: { Image(systemName: "keyboard").frame(width: 24, height: 24) }
-                .help(L("Shortcuts"))
-                .popover(isPresented: $showingShortcuts) {
-                    Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
-                        shortcut("⌘C", L("Copy image"))
-                        shortcut("⌘S", L("Save"))
-                        shortcut("⌘Z", L("Undo"))
-                        shortcut("⌫", L("Delete annotation"))
-                        shortcut(L("⇧ click"), L("Add to selection"))
-                        shortcut("⌘A", L("Select All"))
-                        shortcut("⌘D", L("Duplicate"))
-                        shortcut(L("⌥ drag"), L("Duplicate while moving"))
-                        shortcut(L("Double-click"), L("Edit text or number"))
-                        shortcut("← → ↑ ↓", L("Nudge (⇧ = 10 px)"))
-                        shortcut("V A R O H T N P B C", L("Tools"))
-                    }
-                    .font(.callout)
-                    .padding(14)
-                }
+        Menu {
+            Button(L("Restore Default")) { model.style = .default }
+            Button(L("Shortcuts") + "…") { showingShortcuts = true }
+        } label: {
+            Image(systemName: "ellipsis.circle")
         }
-        .buttonStyle(.borderless)
-        .padding(.horizontal, 14)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .help(L("More options"))
+        .popover(isPresented: $showingShortcuts) {
+            Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
+                shortcut("⌘C", L("Copy image"))
+                shortcut("⌘S", L("Save"))
+                shortcut("⌘Z", L("Undo"))
+                shortcut("⌫", L("Delete annotation"))
+                shortcut(L("⇧ click"), L("Add to selection"))
+                shortcut("⌘A", L("Select All"))
+                shortcut("⌘D", L("Duplicate"))
+                shortcut(L("⌥ drag"), L("Duplicate while moving"))
+                shortcut(L("Double-click"), L("Edit text or number"))
+                shortcut("← → ↑ ↓", L("Nudge (⇧ = 10 px)"))
+                shortcut("V A R O H T N P B C", L("Tools"))
+                shortcut("⌥⌘I", L("Show or hide inspector"))
+            }
+            .font(.callout)
+            .padding(14)
+        }
     }
 
     private func shortcut(_ k: String, _ label: String) -> some View {
@@ -493,29 +696,21 @@ private struct FrameControls: View {
     @Binding var style: Style
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                ForEach(WindowFrame.allCases) { f in
-                    Button { withAnimation(.easeOut(duration: 0.2)) { style.frame = f } } label: {
-                        FrameGlyph(frame: f)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 34)
-                            .background(style.frame == f ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05),
-                                        in: RoundedRectangle(cornerRadius: 7))
-                            .overlay(RoundedRectangle(cornerRadius: 7)
-                                .strokeBorder(style.frame == f ? Color.accentColor : .clear, lineWidth: 1.5))
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(f.title)
+        HStack(spacing: 6) {
+            ForEach(WindowFrame.allCases) { f in
+                Button { withAnimation(.easeOut(duration: 0.2)) { style.frame = f } } label: {
+                    FrameGlyph(frame: f)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 34)
+                        .background(style.frame == f ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05),
+                                    in: RoundedRectangle(cornerRadius: 7))
+                        .overlay(RoundedRectangle(cornerRadius: 7)
+                            .strokeBorder(style.frame == f ? Color.accentColor : .clear, lineWidth: 1.5))
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .help(f.title)
             }
-            InspectorRow(L("Signature")) {
-                TextField(L("@yourname"), text: $style.watermark)
-                    .textFieldStyle(.roundedBorder)
-                    .controlSize(.small)
-            }
-            .help(L("Small text in the corner of the image"))
         }
     }
 }
@@ -580,9 +775,34 @@ private struct LayoutControls: View {
             .padding(.top, 4)
 
             SliderRow(L("Padding"), value: $style.padding, range: 0...0.3)
-            SliderRow(L("Inset"), value: $style.inset, range: 0...0.08)
             SliderRow(L("Corners"), value: $style.cornerRadius, range: 0...0.05)
             SliderRow(L("Shadow"), value: $style.shadow, range: 0...1)
+        }
+    }
+}
+
+private struct AdvancedControls: View {
+    @Binding var style: Style
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            InspectorRow(L("Signature")) {
+                TextField(L("@yourname"), text: $style.watermark)
+                    .textFieldStyle(.roundedBorder)
+                    .controlSize(.small)
+            }
+            .help(L("Small text in the corner of the image"))
+
+            SliderRow(L("Inset"), value: $style.inset, range: 0...0.08)
+            if case .gradient(let colors, let angle) = style.background {
+                SliderRow(L("Angle"),
+                          value: Binding(get: { angle }, set: { style.background = .gradient(colors, angle: $0) }),
+                          range: 0...360, unit: "°")
+            }
+            if style.background != .none {
+                SliderRow(L("Grain"), value: $style.grain, range: 0...1)
+                    .help(L("Adds a subtle film texture to the background"))
+            }
 
             Toggle(isOn: $style.hairline) {
                 Text(L("Fine edge")).frame(maxWidth: .infinity, alignment: .leading)
@@ -676,24 +896,23 @@ private struct AlignmentGrid: View {
 
 private struct BackgroundPicker: View {
     @Binding var style: Style
-    @State private var kind: Kind = .gradient
+    @State private var kind: Kind = .solid
+    @State private var showAll = false
 
     private enum Kind: CaseIterable {
-        case gradient, mesh, solid, image
+        case art, solid, image
 
         init(_ bg: Background) {
             switch bg {
-            case .gradient: self = .gradient
-            case .mesh: self = .mesh
             case .image: self = .image
+            case .art, .gradient, .mesh: self = .art
             case .none, .solid: self = .solid
             }
         }
 
         var title: String {
             switch self {
-            case .gradient: return L("Gradient")
-            case .mesh: return L("Mesh")
+            case .art: return L("Art")
             case .solid: return L("Color")
             case .image: return L("Image")
             }
@@ -701,6 +920,7 @@ private struct BackgroundPicker: View {
     }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 8)
+    private let artColumns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 6)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -724,27 +944,22 @@ private struct BackgroundPicker: View {
             .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 7))
 
             switch kind {
-            case .gradient:
-                LazyVGrid(columns: columns, spacing: 6) {
-                    ForEach(Array(Gradients.presets.enumerated()), id: \.offset) { _, colors in
-                        swatch(.gradient(colors, angle: 135)) {
-                            LinearGradient(colors: colors.map(\.color), startPoint: .topLeading, endPoint: .bottomTrailing)
-                        }
+            case .art:
+                LazyVGrid(columns: artColumns, spacing: 6) {
+                    ForEach(Array(visible(Art.presets, row: 12).enumerated()), id: \.offset) { _, art in
+                        artSwatch(art)
                     }
                 }
-                if case .gradient(let colors, let angle) = style.background {
-                    SliderRow(L("Angle"),
-                              value: Binding(get: { angle }, set: { style.background = .gradient(colors, angle: $0) }),
-                              range: 0...360, unit: "°")
-                }
-            case .mesh:
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 4), spacing: 6) {
-                    ForEach(Array(Gradients.meshes.enumerated()), id: \.offset) { _, colors in
-                        swatch(.mesh(colors)) {
-                            if let img = StyleThumbnails.background(.mesh(colors)) {
-                                Image(decorative: img, scale: 1).resizable()
-                            }
+                HStack {
+                    moreButton(total: Art.presets.count, row: 12)
+                    Spacer()
+                    if case .art(let current) = style.background {
+                        Button { style.background = .art(current.reseeded()) } label: {
+                            Label(L("Vary"), systemImage: "shuffle").font(.caption)
                         }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .help(L("Keeps the colors and draws new shapes"))
                     }
                 }
             case .solid:
@@ -756,11 +971,12 @@ private struct BackgroundPicker: View {
                         }
                     }
                     .help(L("Transparent"))
-                    ForEach(Gradients.solids, id: \.self) { c in
+                    ForEach(visible(Gradients.solids, row: 6), id: \.self) { c in
                         swatch(.solid(c)) { c.color }
                     }
                     customColorSwatch
                 }
+                moreButton(total: Gradients.solids.count, row: 6)
             case .image:
                 HStack(spacing: 8) {
                     Button(action: pickImage) {
@@ -771,23 +987,43 @@ private struct BackgroundPicker: View {
                     }
                     .help(L("Use the current wallpaper"))
                 }
-                if case .image(let path) = style.background {
-                    Text(URL(fileURLWithPath: path).lastPathComponent)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                if case .image = style.background {
                     SliderRow(L("Blur"), value: $style.backgroundBlur, range: 0...1)
                         .help(L("Blurs the background image"))
                 }
             }
-            if style.background != .none {
-                SliderRow(L("Grain"), value: $style.grain, range: 0...1)
-                    .help(L("Adds a subtle film texture to the background"))
-            }
         }
-        .onAppear { kind = Kind(style.background) }
-        .onChange(of: style.background) { kind = Kind(style.background) }
+        .onAppear { sync() }
+        .onChange(of: style.background) { sync() }
+    }
+
+    private func sync() {
+        kind = Kind(style.background)
+        if !showAll, selectionIsHidden { showAll = true }
+    }
+
+    private var selectionIsHidden: Bool {
+        switch style.background {
+        case .solid(let c): return !Gradients.solids.prefix(6).contains(c) && Gradients.solids.contains(c)
+        case .art(let a): return !Art.presets.prefix(12).contains { a.isVariant(of: $0) }
+        default: return false
+        }
+    }
+
+    private func visible<T>(_ items: [T], row: Int) -> [T] {
+        showAll ? items : Array(items.prefix(row))
+    }
+
+    @ViewBuilder
+    private func moreButton(total: Int, row: Int) -> some View {
+        if total > row {
+            Button { withAnimation(.easeOut(duration: 0.2)) { showAll.toggle() } } label: {
+                Text(showAll ? L("Show Less") : L("Show More"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     /// Opens the system color panel; selected when the background is a color outside the presets.
@@ -810,6 +1046,14 @@ private struct BackgroundPicker: View {
         case (.gradient(let a, _), .gradient(let b, _)): return a == b
         default: return bg == style.background
         }
+    }
+
+    private func artSwatch(_ art: Art) -> some View {
+        var selected: Bool { if case .art(let a) = style.background { return a.isVariant(of: art) }; return false }
+        return Button { if !selected { style.background = .art(art) } } label: {
+            swatchShape(selected: selected) { ArtThumbnail(art: art) }
+        }
+        .buttonStyle(.plain)
     }
 
     private func swatch<C: View>(_ bg: Background, @ViewBuilder _ content: () -> C) -> some View {
@@ -846,13 +1090,41 @@ private struct BackgroundPicker: View {
     }
 
     private func useWallpaper() {
-        guard let screen = NSScreen.main, let url = NSWorkspace.shared.desktopImageURL(for: screen) else { return }
+        guard let screen = NSScreen.main else { return }
         var isDir: ObjCBool = false
-        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
+        if let url = NSWorkspace.shared.desktopImageURL(for: screen),
+           FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
            ImageCache.shared.image(path: url.path) != nil {
             style.background = .image(path: url.path)
-        } else {
-            HUD.show(L("Couldn't read the wallpaper"), symbol: "exclamationmark.triangle.fill")
+            return
+        }
+        CaptureService.captureWallpaper(of: screen) { image in
+            if let image, let path = CaptureService.saveWallpaper(image) {
+                style.background = .image(path: path)
+            } else {
+                HUD.show(L("Couldn't read the wallpaper"), symbol: "exclamationmark.triangle.fill")
+            }
+        }
+    }
+}
+
+
+private struct ArtThumbnail: View {
+    let art: Art
+    @State private var image: CGImage?
+
+    var body: some View {
+        ZStack {
+            Color(.sRGB, red: art.palette[0].r, green: art.palette[0].g, blue: art.palette[0].b)
+            if let image {
+                Image(decorative: image, scale: 1).resizable().scaledToFill()
+            }
+        }
+        .task(id: art) {
+            let art = art
+            image = await Task.detached(priority: .userInitiated) {
+                ArtCache.thumbnails.image(art, for: CGSize(width: 96, height: 96))
+            }.value
         }
     }
 }

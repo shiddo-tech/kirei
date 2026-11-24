@@ -117,6 +117,13 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
     @objc func kireiZoomOut(_ sender: Any?) { model.zoomOut() }
     @objc func kireiActualSize(_ sender: Any?) { model.zoomActualSize() }
     @objc func kireiZoomToFit(_ sender: Any?) { model.zoomToFit() }
+    @objc func kireiToggleInspector(_ sender: Any?) {
+        UserDefaults.standard.set(!inspectorVisible, forKey: EditorView.inspectorKey)
+    }
+
+    private var inspectorVisible: Bool {
+        UserDefaults.standard.object(forKey: EditorView.inspectorKey) as? Bool ?? true
+    }
 
     func windowWillReturnUndoManager(_ window: NSWindow) -> UndoManager? { undo }
 
@@ -210,5 +217,14 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             HUD.show(n == 0 ? L("No sensitive data found") : n == 1 ? L("1 item redacted") : String(format: L("%d items redacted"), n),
                      symbol: "eye.slash.fill")
         }
+    }
+}
+
+extension EditorWindowController: NSMenuItemValidation {
+    func validateMenuItem(_ item: NSMenuItem) -> Bool {
+        if item.action == #selector(kireiToggleInspector(_:)) {
+            item.title = L(inspectorVisible ? "Hide Inspector" : "Show Inspector")
+        }
+        return true
     }
 }

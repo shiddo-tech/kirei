@@ -115,6 +115,8 @@ enum StyleThumbnails {
         let key = hasher.finalize()
         if let c = cache[key] { return c }
         guard let ctx = Renderer.makeContext(width: size, height: size) else { return nil }
+        ctx.translateBy(x: 0, y: CGFloat(size))
+        ctx.scaleBy(x: 1, y: -1)
         Renderer.drawBackground(bg, in: CGRect(x: 0, y: 0, width: size, height: size), ctx: ctx)
         let img = ctx.makeImage()
         cache[key] = img

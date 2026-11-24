@@ -226,6 +226,44 @@ enum CaptureService {
         DispatchQueue.main.async { completion(r) }
     }
 
+    /// Captures the Dock's wallpaper window for the screen. Needed when the wallpaper file was deleted
+    /// (macOS keeps showing a cached copy) and for dynamic or aerial wallpapers, which have no plain image file.
+    static func captureWallpaper(of screen: NSScreen, completion: @escaping (CGImage?) -> Void) {
+        let done: (CGImage?) -> Void = { img in DispatchQueue.main.async { completion(img) } }
+        SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: false) { content, _ in
+            let primaryH = NSScreen.screens.first?.frame.height ?? 0
+            let f = screen.frame
+            let target = CGRect(x: f.minX, y: primaryH - f.maxY, width: f.width, height: f.height).integral
+            let wallpapers = (content?.windows ?? []).filter {
+                $0.owningApplication?.bundleIdentifier == "com.apple.dock" && ($0.title ?? "").hasPrefix("Wallpaper")
+            }
+            guard let window = wallpapers.first(where: { $0.isOnScreen && $0.frame.integral == target })
+                    ?? wallpapers.first(where: { $0.frame.integral == target }) else { return done(nil) }
+            let config = SCStreamConfiguration()
+            config.width = Int(window.frame.width * screen.backingScaleFactor)
+            config.height = Int(window.frame.height * screen.backingScaleFactor)
+            config.showsCursor = false
+            config.captureResolution = .best
+            SCScreenshotManager.captureImage(contentFilter: SCContentFilter(desktopIndependentWindow: window),
+                                             configuration: config) { image, error in
+                if image == nil { NSLog("Kirei wallpaper capture failed: \(String(describing: error))") }
+                done(image)
+            }
+        }
+    }
+
+    /// Writes a captured wallpaper to Application Support and returns its path. Each capture gets
+    /// its own file, so saved styles that use an older one keep working.
+    static func saveWallpaper(_ image: CGImage) -> String? {
+        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+        let dir = base.appendingPathComponent("Kirei/Wallpapers", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = dir.appendingPathComponent("wallpaper-\(Int(Date().timeIntervalSince1970)).png")
+        guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, image, nil)
+        return CGImageDestinationFinalize(dest) ? url.path : nil
+    }
+
     static func load(url: URL) -> CapturedImage? {
         guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
               let img = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }

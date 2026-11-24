@@ -17,11 +17,11 @@ enum Sounds {
         sound.play()
     }
 
-    /// Robotic "kirei" (vocoded Kyoko voice), made by scripts/make-voice.swift. Missing in debug runs.
+    /// Soft "kirei" (Kyoko voice with a light vocoder shimmer), made by scripts/make-voice.swift. Missing in debug runs.
     private static let voice: NSSound? = {
         guard let url = Bundle.main.url(forResource: "kirei-voice", withExtension: "wav"),
               let s = NSSound(contentsOf: url, byReference: false) else { return nil }
-        s.volume = 0.6
+        s.volume = 0.4
         return s
     }()
 

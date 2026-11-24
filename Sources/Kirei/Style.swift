@@ -42,13 +42,14 @@ enum Background: Codable, Hashable {
     case solid(RGBA)
     case gradient([RGBA], angle: Double)
     case image(path: String)
-    /// Base color plus up to three soft color blooms.
+    /// Base color plus up to three soft color blooms. No longer offered; kept so saved presets still load.
     case mesh([RGBA])
+    case art(Art)
 
     /// Smooth color ramps band in 8-bit exports unless a little noise dithers them.
     var isSmooth: Bool {
         switch self {
-        case .gradient, .mesh: return true
+        case .gradient, .mesh, .art: return true
         default: return false
         }
     }
@@ -108,7 +109,7 @@ enum AspectRatio: String, Codable, CaseIterable, Identifiable {
 }
 
 struct Style: Codable, Hashable {
-    var background: Background = .gradient(Gradients.presets[1], angle: 135)
+    var background: Background = .solid(RGBA(hex: "#F2F2F7"))
     /// Fractions of the screenshot's larger side.
     var padding: Double = 0.08
     var inset: Double = 0

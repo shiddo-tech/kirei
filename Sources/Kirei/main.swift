@@ -12,6 +12,15 @@ if args.count == 5, args[1] == "--preview-test", let scale = Double(args[4]) {
     print("style:", model.style.background, "crop:", model.displayCrop, "out:", img.width, "x", img.height)
     exit(0)
 }
+// Developer check: `Kirei --art-sheet <arts.json> <out-dir>` renders each Art in the JSON array to <out-dir>/<index>.png.
+if args.count == 4, args[1] == "--art-sheet" {
+    guard let arts = try? JSONDecoder().decode([Art].self, from: Data(contentsOf: URL(fileURLWithPath: args[2]))) else { exit(1) }
+    for (i, art) in arts.enumerated() {
+        guard let img = ArtCache.shared.image(art, for: CGSize(width: 1600, height: 1000)) else { exit(1) }
+        _ = Exporter.save(img, scale: 1, to: URL(fileURLWithPath: args[3]).appendingPathComponent("\(i).png"), format: .png)
+    }
+    exit(0)
+}
 // Developer self-test: `Kirei --scroll-test <tall.png> <out.png>` simulates a scroll with a sticky
 // header and footer over a tall image and stitches the frames back together.
 if args.count == 4, args[1] == "--scroll-test" {
@@ -86,7 +95,7 @@ if args.count == 4, args[1] == "--ui-test" {
                           ("canvas", CGPoint(x: 400, y: H / 2)),
                           ("inspector save card", CGPoint(x: W - 230, y: H - bar - 60)),
                           ("inspector slider", CGPoint(x: W - 120, y: 60)),
-                          ("inspector keyboard button", CGPoint(x: W - 26, y: H - bar / 2))] {
+                          ("inspector toggle", CGPoint(x: W - 284 - 26, y: H - bar / 2))] {
             let v = frameView.hitTest(p)
             var chain: [String] = []
             var cur = v

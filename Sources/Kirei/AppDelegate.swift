@@ -362,6 +362,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         viewMenu.addItem(withTitle: L("Zoom Out"), action: #selector(EditorWindowController.kireiZoomOut(_:)), keyEquivalent: "-")
         viewMenu.addItem(withTitle: L("Actual Size"), action: #selector(EditorWindowController.kireiActualSize(_:)), keyEquivalent: "0")
         viewMenu.addItem(withTitle: L("Fit in Window"), action: #selector(EditorWindowController.kireiZoomToFit(_:)), keyEquivalent: "9")
+        viewMenu.addItem(.separator())
+        viewMenu.addItem(withTitle: L("Hide Inspector"), action: #selector(EditorWindowController.kireiToggleInspector(_:)), keyEquivalent: "i")
+            .keyEquivalentModifierMask = [.command, .option]
         viewItem.submenu = viewMenu
         main.addItem(viewItem)
 

@@ -61,7 +61,6 @@
 "Format:" = "Formato:";
 "Get Started" = "Começar";
 "Global Shortcuts" = "Atalhos globais";
-"Gradient" = "Degradê";
 "Grant Permission…" = "Conceder permissão…";
 "Hide Data" = "Ocultar dados";
 "Hide Kirei" = "Ocultar Kirei";
@@ -196,7 +195,6 @@
 "Kirei can capture your screen. You're all set." = "O Kirei já pode capturar sua tela. Tudo pronto.";
 "Kirei lives in the menu bar. Use these from any app:" = "O Kirei fica na barra de menus. Use estes atalhos em qualquer app:";
 "Kirei needs this permission to capture the screen. Nothing leaves your Mac." = "O Kirei precisa dessa permissão para capturar a tela. Nada sai do seu Mac.";
-"Mesh" = "Mesh";
 "Open System Settings › Privacy & Security › Screen & System Audio Recording." = "Abra Ajustes do Sistema › Privacidade e Segurança › Gravação de Tela e Áudio do Sistema.";
 "Restart Kirei" = "Reiniciar o Kirei";
 "Restart Kirei so macOS applies the permission." = "Reinicie o Kirei para o macOS aplicar a permissão.";
@@ -257,3 +255,15 @@
 "Capture sound" = "Som da captura";
 "Voice “kirei”" = "Voz “kirei”";
 "Shutter" = "Obturador";
+"Click again to switch" = "Clique de novo para alternar";
+"Color and thickness" = "Cor e espessura";
+"Advanced" = "Avançado";
+"More options" = "Mais opções";
+"Show More" = "Mostrar mais";
+"Show Less" = "Mostrar menos";
+"Show Inspector" = "Mostrar inspetor";
+"Hide Inspector" = "Ocultar inspetor";
+"Show or hide inspector" = "Mostrar ou ocultar o inspetor";
+"Art" = "Arte";
+"Vary" = "Variar";
+"Keeps the colors and draws new shapes" = "Mantém as cores e gera novas formas";

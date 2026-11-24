@@ -1,7 +1,7 @@
 // Makes Resources/kirei-voice.wav, the spoken "kirei" capture sound:
 //   say -v Kyoko -r 190 -o /tmp/kyoko.aiff "きれい"
-//   swiftc -O scripts/make-voice.swift -o /tmp/make-voice && /tmp/make-voice /tmp/kyoko.aiff Resources/kirei-voice.wav vocoder
-// Modes: vocoder (the one in use), chord, ring, raw.
+//   swiftc -O scripts/make-voice.swift -o /tmp/make-voice && /tmp/make-voice /tmp/kyoko.aiff Resources/kirei-voice.wav soft
+// Modes: soft (the one in use), vocoder, chord, ring, raw.
 import AVFoundation
 let a = CommandLine.arguments
 let inURL = URL(fileURLWithPath: a[1]), outURL = URL(fileURLWithPath: a[2]), mode = a[3]
@@ -40,7 +40,11 @@ func vocode(_ x: [Float], carrier: (Int) -> Float, dry: Float) -> [Float] {
 }
 func saw(_ hz: Double) -> (Int) -> Float { { i in Float(2 * (Double(i) * hz / sr).truncatingRemainder(dividingBy: 1) - 1) } }
 var y: [Float]
+func tri(_ hz: Double) -> (Int) -> Float { { i in let p = (Double(i) * hz / sr).truncatingRemainder(dividingBy: 1); return Float(4 * abs(p - 0.5) - 1) } }
 switch mode {
+case "soft":
+    let c = tri(220); y = vocode(x, carrier: c, dry: 0).map { $0 * 0.25 }
+    y = zip(y, x).map { $0 + $1 * 0.8 }
 case "vocoder":
     let c = saw(150); y = vocode(x, carrier: c, dry: 0.12)
 case "chord":
@@ -62,11 +66,11 @@ default:
     y = x
 }
 // gentle lowpass to take the edge off, fades, normalize
-var lp = Biquad.lp(mode == "raw" ? 9000 : 6500, sr); y = y.map { lp.run($0) }
-let fadeIn = Int(sr * 0.004), fadeOut = Int(sr * 0.06)
+var lp = Biquad.lp(mode == "raw" ? 9000 : mode == "soft" ? 3800 : 6500, sr); y = y.map { lp.run($0) }
+let fadeIn = Int(sr * (mode == "soft" ? 0.012 : 0.004)), fadeOut = Int(sr * (mode == "soft" ? 0.12 : 0.06))
 for i in 0..<min(fadeIn, y.count) { y[i] *= Float(i) / Float(fadeIn) }
 for i in 0..<min(fadeOut, y.count) { y[y.count - 1 - i] *= Float(i) / Float(fadeOut) }
-let peak = y.map { abs($0) }.max() ?? 1; y = y.map { $0 / peak * 0.5 }
+let peak = y.map { abs($0) }.max() ?? 1; y = y.map { $0 / peak * (mode == "soft" ? 0.35 : 0.5) }
 let ob = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: AVAudioFrameCount(y.count))!
 ob.frameLength = AVAudioFrameCount(y.count)
 y.withUnsafeBufferPointer { ob.floatChannelData![0].update(from: $0.baseAddress!, count: y.count) }
