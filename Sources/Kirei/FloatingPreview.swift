@@ -71,6 +71,7 @@ final class FloatingPreview {
         } else {
             showPanel()
         }
+        HotKeyManager.shared.setCopyShortcut { [weak self] in self?.copy() }
         scheduleDismiss()
     }
 
@@ -119,7 +120,10 @@ final class FloatingPreview {
     private func close(animated: Bool) {
         dismissWork?.cancel()
         let p = panel
-        if FloatingPreview.current === self { FloatingPreview.current = nil }
+        if FloatingPreview.current === self {
+            FloatingPreview.current = nil
+            HotKeyManager.shared.setCopyShortcut(nil)
+        }
         guard animated else { p.orderOut(nil); return }
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.22

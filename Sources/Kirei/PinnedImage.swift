@@ -47,6 +47,7 @@ final class PinnedImage: NSObject, NSWindowDelegate {
         window.menuProvider = { [weak self] in self?.menu() }
         window.onScroll = { [weak self] dy in self?.scale(by: 1 + dy * 0.01) }
         window.onMagnify = { [weak self] m in self?.scale(by: 1 + m) }
+        window.onCopy = { [weak self] in self?.copy() }
 
         window.alphaValue = 0
         window.orderFrontRegardless()
@@ -72,11 +73,7 @@ final class PinnedImage: NSObject, NSWindowDelegate {
             let item = ClosureMenuItem(title: title, action: action)
             m.addItem(item)
         }
-        add(L("Copy")) { [weak self] in
-            guard let self else { return }
-            Exporter.copy(self.captured.image, scale: self.captured.scale)
-            Sounds.playCopy()
-        }
+        add(L("Copy")) { [weak self] in self?.copy() }
         add(L("Edit")) { [weak self] in self?.edit() }
         add(L("Actual Size")) { [weak self] in
             guard let self else { return }
@@ -101,6 +98,12 @@ final class PinnedImage: NSObject, NSWindowDelegate {
         m.addItem(.separator())
         add(L("Close")) { [weak self] in self?.close() }
         return m
+    }
+
+    private func copy() {
+        Exporter.copy(captured.image, scale: captured.scale)
+        Sounds.playCopy()
+        HUD.show(L("Image copied"))
     }
 
     private func edit() {
@@ -130,6 +133,7 @@ final class PinWindow: NSWindow {
     var menuProvider: (() -> NSMenu?)?
     var onScroll: ((CGFloat) -> Void)?
     var onMagnify: ((CGFloat) -> Void)?
+    var onCopy: (() -> Void)?
 
     override var canBecomeKey: Bool { true }
 
@@ -146,6 +150,15 @@ final class PinWindow: NSWindow {
 
     override func keyDown(with event: NSEvent) {
         if event.keyCode == 53 { close() } else { super.keyDown(with: event) }
+    }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if mods == .command, event.charactersIgnoringModifiers == "c", let onCopy {
+            onCopy()
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
     }
 }
 

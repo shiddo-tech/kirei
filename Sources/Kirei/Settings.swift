@@ -214,7 +214,23 @@ final class HotKeyManager {
     private var refs: [EventHotKeyRef] = []
     private var ids: [UInt32: CaptureAction] = [:]
     private var installed = false
+    private var copyRef: EventHotKeyRef?
+    private var copyRun: (() -> Void)?
+    private static let copyID: UInt32 = 999
     var suspended = false { didSet { registerAll() } }
+
+    /// Claims ⌘C system-wide while `run` is set, so a fresh capture copies without focusing Kirei first.
+    func setCopyShortcut(_ run: (() -> Void)?) {
+        if let r = copyRef { UnregisterEventHotKey(r); copyRef = nil }
+        copyRun = run
+        guard run != nil else { return }
+        installHandlerIfNeeded()
+        var ref: EventHotKeyRef?
+        let hkID = EventHotKeyID(signature: OSType(0x4B49_5245), id: Self.copyID)
+        if RegisterEventHotKey(UInt32(kVK_ANSI_C), UInt32(cmdKey), hkID, GetApplicationEventTarget(), 0, &ref) == noErr {
+            copyRef = ref
+        }
+    }
 
     func registerAll() {
         for r in refs { UnregisterEventHotKey(r) }
@@ -243,7 +259,9 @@ final class HotKeyManager {
             GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
                               nil, MemoryLayout<EventHotKeyID>.size, nil, &hkID)
             let mgr = HotKeyManager.shared
-            if let action = mgr.ids[hkID.id] {
+            if hkID.id == HotKeyManager.copyID {
+                DispatchQueue.main.async { mgr.copyRun?() }
+            } else if let action = mgr.ids[hkID.id] {
                 DispatchQueue.main.async { mgr.handler?(action) }
             }
             return noErr
