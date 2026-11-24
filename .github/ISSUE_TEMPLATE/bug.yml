@@ -1,0 +1,40 @@
+name: Bug
+description: Algo não funciona como deveria
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Versão do Kirei
+      description: Está em Ajustes.
+      placeholder: "1.2.0 (202611241200)"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: Versão do macOS
+      placeholder: "macOS 15.1"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
+      placeholder: |
+        1. Aperte ⌥⇧1
+        2. Selecione uma área
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que você esperava e o que aconteceu
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relatórios de falha
+      description: Se o app travou ou congelou, anexe os arquivos da pasta ~/Library/Logs/Kirei. Antes de anexar capturas, confira se elas não mostram dados seus.
