@@ -10,7 +10,7 @@ App nativo para macOS, feito em Swift e SwiftUI, com ocultação automática de 
 
 ![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-black)
 ![Plataforma](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
-![Swift](https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white)
+![Swift](https://img.shields.io/badge/Swift-5.9-black?logo=swift&logoColor=F05138)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-black)
 ![Idiomas](https://img.shields.io/badge/idiomas-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-black)
 
