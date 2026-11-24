@@ -53,7 +53,7 @@ Na seleção de área, uma lupa mostra os pixels ao redor do cursor, com as coor
 
 No momento da captura há um flash e o som do Kirei: por padrão, uma voz robótica dizendo "kirei" (`Resources/kirei-voice.wav`, gerada por `scripts/make-voice.swift`). Em **Ajustes › Geral** dá para trocar pelo obturador. Os outros sons são sintetizados no próprio app. A imagem desliza até a miniatura.
 
-- **⌘C rápido**: enquanto a miniatura pós-captura está na tela, ⌘C copia a imagem, mesmo com outro app em primeiro plano. Quando a miniatura some, o ⌘C volta a funcionar normalmente nos outros apps. Numa imagem fixada, ⌘C também copia.
+- **⌘C rápido**: enquanto a miniatura pós-captura está na tela, ⌘C copia a imagem, mesmo com outro app em primeiro plano. Quando a miniatura some, o ⌘C volta a funcionar normalmente nos outros apps. No editor e numa imagem fixada, ⌘C também copia.
 - **Fixar na tela**: pela miniatura, pelo editor (⌘P) ou pelo histórico. A imagem fica por cima de tudo. Arraste para mover, role ou faça pinça para redimensionar, clique duas vezes para editar e use o clique direito para opacidade e "deixar cliques passarem". Esc fecha. As imagens fixadas também fecham pela barra de menus.
 - **Histórico**: barra de menus › Histórico de capturas (⌘Y no app). Guarda os originais dos últimos 14 dias (até 60) em `~/Library/Application Support/Kirei/History`. Dá para desligar em Ajustes.
 - **Gravação**: grava em MP4 (H.264, 60 fps, com cursor). Ao parar, a miniatura oferece salvar MP4, salvar GIF (12 fps, até 960 px) ou copiar. Durante a gravação, o ícone da barra de menus vira um botão de parar.

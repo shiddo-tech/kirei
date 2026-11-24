@@ -62,6 +62,11 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
             guard let self, e.window === self.window else { return e }
             // Leave typing alone.
             if self.window?.firstResponder is NSText { return e }
+            // Handled here instead of the Edit menu, whose copy: can be taken by focused SwiftUI controls.
+            if e.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
+               e.charactersIgnoringModifiers?.lowercased() == "c" {
+                self.copyImage(); return nil
+            }
             let mods = e.modifierFlags.intersection([.command, .option, .control])
             guard mods.isEmpty else { return e }
             switch Int(e.keyCode) {
