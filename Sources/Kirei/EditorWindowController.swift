@@ -55,18 +55,24 @@ final class EditorWindowController: NSWindowController, NSWindowDelegate {
 
     required init?(coder: NSCoder) { fatalError() }
 
+    override func showWindow(_ sender: Any?) {
+        super.showWindow(sender)
+        // SwiftUI focuses the first text field in the inspector, which would swallow the tool shortcuts.
+        DispatchQueue.main.async { [weak self] in self?.window?.makeFirstResponder(nil) }
+    }
+
     // MARK: Keyboard
 
     private func installKeyMonitor() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
             guard let self, e.window === self.window else { return e }
             // Leave typing alone.
-            if self.window?.firstResponder is NSText { return e }
-            // Handled here instead of the Edit menu, whose copy: can be taken by focused SwiftUI controls.
+            let text = self.window?.firstResponder as? NSText
             if e.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
-               e.charactersIgnoringModifiers?.lowercased() == "c" {
+               e.charactersIgnoringModifiers?.lowercased() == "c", (text?.selectedRange.length ?? 0) == 0 {
                 self.copyImage(); return nil
             }
+            if text != nil { return e }
             let mods = e.modifierFlags.intersection([.command, .option, .control])
             guard mods.isEmpty else { return e }
             switch Int(e.keyCode) {
