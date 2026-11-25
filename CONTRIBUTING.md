@@ -1,11 +1,11 @@
-# Contribuindo com o Kirei
+# Contributing to Kirei
 
-Obrigado pelo interesse. Este guia explica como preparar o ambiente, o que esperamos de um pull request e como relatar problemas. Issues e PRs podem ser escritos em português, inglês ou espanhol.
+Thank you for your interest in Kirei. This guide covers setting up your environment, what we look for in a pull request and how to report issues. Issues and pull requests are welcome in English, Portuguese or Spanish.
 
-## Preparar o ambiente
+## Setting up
 
-1. Instale o [Rust](https://rustup.rs) e as Command Line Tools do Xcode (`xcode-select --install`). O Xcode completo não é necessário.
-2. Clone o repositório e compile:
+1. Install [Rust](https://rustup.rs) and the Xcode Command Line Tools (`xcode-select --install`). A full Xcode install is not required.
+2. Clone the repository and build:
 
    ```bash
    git clone https://github.com/shiddo-tech/kirei.git
@@ -13,45 +13,45 @@ Obrigado pelo interesse. Este guia explica como preparar o ambiente, o que esper
    scripts/bundle-macos.sh --install
    ```
 
-3. Se você recompila com frequência, crie o certificado local **Kirei Local Signing**. Sem ele, o macOS pede a permissão de Gravação de Tela de novo a cada build. O passo a passo está no README, em [Assinatura local e permissões](README.md#assinatura-local-e-permissões).
+3. If you rebuild often, create the local **Kirei Local Signing** certificate. Without it, macOS asks for the Screen Recording permission again after every build. See [Local code signing and permissions](README.md#local-code-signing-and-permissions) in the README for step-by-step instructions.
 
-Você não precisa de conta de desenvolvedor da Apple para contribuir.
+You do not need an Apple Developer account to contribute.
 
-## Antes de abrir um pull request
+## Before opening a pull request
 
-- Para mudanças grandes (funcionalidade nova, refatoração, troca de comportamento), abra uma issue antes. Assim combinamos a abordagem e ninguém perde trabalho.
-- Mantenha cada PR focado em um assunto.
-- Confirme que `cargo build` compila e que `cargo test` passa.
-- Teste no `.app` gerado pelo `scripts/bundle-macos.sh`. Com `cargo run`, a permissão de Gravação de Tela fica com o terminal.
-- Se mexer no renderizador ou na captura com rolagem, use os modos de teste descritos no README, em [Modos de teste](README.md#modos-de-teste).
-- Em mudanças visuais, anexe capturas de antes e depois no PR.
+- For significant changes (new features, refactors, behavior changes), open an issue first so we can agree on the approach before anyone invests time.
+- Keep each pull request focused on a single topic.
+- Make sure `cargo build` succeeds and `cargo test` passes.
+- Test with the `.app` bundle produced by `scripts/bundle-macos.sh`. Under `cargo run`, the Screen Recording permission is granted to your terminal instead.
+- If you touch the renderer or scrolling capture, use the [test modes](README.md#test-modes) described in the README.
+- For visual changes, attach before and after screenshots to the pull request.
 
-## Estilo de código
+## Code style
 
-- Siga o estilo dos arquivos ao redor. Rode `cargo fmt` antes de commitar e evite dependências novas sem combinar numa issue.
-- Escreva comentários só quando o código sozinho não explica a regra, como um contorno de bug do macOS ou uma restrição externa.
-- Todo texto visível para o usuário passa por `l("English text")`. A chave é o texto em inglês.
+- Follow the conventions of the surrounding code. Run `cargo fmt` before committing, and discuss any new dependency in an issue first.
+- Only write comments when the code alone cannot explain the rule, such as a macOS bug workaround or an external constraint.
+- All user-facing text goes through `l("English text")`. The English text is the key.
 
-## Traduções
+## Translations
 
-O app está em inglês, português (Brasil) e espanhol. Se você incluir ou alterar um texto, atualize os três arquivos em `Localization/<idioma>.lproj/Localizable.strings`. Se não souber traduzir, deixe a chave em inglês e avise no PR.
+Kirei ships in English, Portuguese (Brazil) and Spanish. When you add or change a string, update all three files in `Localization/<language>.lproj/Localizable.strings`. If you can't translate a string, leave the English key in place and mention it in the pull request.
 
-Para incluir um idioma novo, siga os passos em [Idiomas](README.md#idiomas), no README.
+To add a new language, follow the steps under [Localization](README.md#localization) in the README.
 
-## Privacidade
+## Privacy
 
-O Kirei funciona 100% no Mac, sem conta, servidor ou envio de dados. Não aceitamos PRs que adicionem telemetria, analytics ou chamadas de rede sem que o usuário peça.
+Kirei runs entirely on the Mac, with no account, no server and no data collection. We do not accept pull requests that add telemetry, analytics or network calls the user has not explicitly asked for.
 
-## Relatar um bug
+## Reporting a bug
 
-Use o template de bug em [Issues](https://github.com/shiddo-tech/kirei/issues/new/choose) e informe:
+Use the bug template under [Issues](https://github.com/shiddo-tech/kirei/issues/new/choose) and include:
 
-- versão do Kirei (em **Ajustes**) e do macOS;
-- passos para reproduzir o problema;
-- o resultado esperado e o que aconteceu de fato.
+- your Kirei version (shown in **Settings**) and macOS version;
+- steps to reproduce the problem;
+- the expected result and what actually happened.
 
-Se o app travou ou congelou, anexe os relatórios da pasta `~/Library/Logs/Kirei`. Antes de anexar capturas, confira se elas não mostram dados seus.
+If the app crashed or froze, attach the reports from `~/Library/Logs/Kirei`. Before attaching screenshots, make sure they don't reveal any personal data.
 
-## Licença
+## License
 
-Ao contribuir, você concorda que sua contribuição será distribuída sob a [licença MIT](LICENSE) do projeto.
+By contributing, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
