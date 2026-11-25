@@ -1,16 +1,16 @@
 <div align="center">
 
-<img src="docs/icon.png" alt="Ícone do Kirei" width="128" height="128">
+<img src="assets/icon.png" alt="Ícone do Kirei" width="128" height="128">
 
 # Kirei
 
 **Capturas de tela bonitas e prontas para compartilhar, com um atalho.**
 
-App nativo para macOS, feito em Swift e SwiftUI, com ocultação automática de dados sensíveis (inclusive CPF e CNPJ).
+App para macOS feito em Rust com [GPUI](https://www.gpui.rs/), com ocultação automática de dados sensíveis (inclusive CPF e CNPJ).
 
 ![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-black)
 ![Plataforma](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
-![Swift](https://img.shields.io/badge/Swift-5.9-black?logo=swift&logoColor=F05138)
+![Rust](https://img.shields.io/badge/Rust-2024-black?logo=rust)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-black)
 ![Idiomas](https://img.shields.io/badge/idiomas-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-black)
 
@@ -34,22 +34,15 @@ Ele vive na barra de menus, responde a atalhos globais e funciona 100% no seu Ma
 | **Dados sensíveis ocultos** | OCR com Vision e detecção de e-mail, telefone, cartão (Luhn), CPF, CNPJ, IP, chaves de API e JWT. |
 | **Anotações** | Seta, retângulo, elipse, marca-texto, texto, contador numerado, pixelizar, desfocar e recorte, com guias de alinhamento. |
 | **Fluxo rápido** | Miniatura flutuante, ⌘C imediato, fixar imagem na tela e histórico dos últimos 14 dias. |
-| **Nativo de verdade** | ScreenCaptureKit, Liquid Glass no macOS 26, vibração no trackpad e interface em três idiomas. |
+| **Integrado ao macOS** | ScreenCaptureKit, Vision, vibração no trackpad e interface em três idiomas. Feito para chegar também ao Windows e ao Linux. |
 
 ## Requisitos
 
-- macOS 14 (Sonoma) ou mais recente
-- Command Line Tools do Xcode (`xcode-select --install`). O Xcode completo não é necessário.
+- macOS 14 (Sonoma) ou mais recente. A gravação de tela exige macOS 15.
+- Para compilar: [Rust](https://rustup.rs) e as Command Line Tools do Xcode (`xcode-select --install`). O Xcode completo não é necessário.
 - Permissão de **Gravação de Tela e Áudio do Sistema**
 
 ## Instalação
-
-### Baixar pronto
-
-Baixe o `Kirei-<versão>.dmg` mais recente em [Releases](https://github.com/shiddo-tech/kirei/releases), abra o arquivo e arraste o Kirei para **Aplicativos**.
-
-> [!IMPORTANT]
-> Se o DMG não estiver notarizado pela Apple, o macOS bloqueia a primeira abertura. Para liberar, clique com o botão direito no app, escolha **Abrir** e confirme. Outra opção é ir em **Ajustes do Sistema › Privacidade e Segurança** e clicar em **Abrir Mesmo Assim**.
 
 ### Compilar a partir do código
 
@@ -58,17 +51,16 @@ Você não precisa de conta de desenvolvedor da Apple nem do Xcode completo.
 ```bash
 git clone https://github.com/shiddo-tech/kirei.git
 cd kirei
-scripts/build.sh --install
+scripts/bundle-macos.sh --install
 ```
 
 | Comando | O que faz |
 |---|---|
-| `scripts/build.sh` | Compila em modo release e monta `build/Kirei.app` |
-| `scripts/build.sh --install` | Compila, gera o ícone, assina e copia para `/Applications` |
-| `scripts/build.sh --dmg` | Gera `build/Kirei-<versão>.dmg`, com fundo e layout próprios |
+| `scripts/bundle-macos.sh` | Compila em debug e monta `target/debug/Kirei.app` |
+| `scripts/bundle-macos.sh --release` | Compila em release e monta `target/release/Kirei.app` |
+| `scripts/bundle-macos.sh --install` | Compila em release, assina e copia para `/Applications` |
 
-> [!NOTE]
-> Na geração do DMG, o Finder pede permissão de Automação na primeira vez. Sem ela, o DMG é gerado do mesmo jeito, só que sem o layout da janela.
+O primeiro build leva alguns minutos, porque o GPUI compila muita coisa. Os seguintes são incrementais.
 
 ### Primeira execução
 
@@ -78,7 +70,7 @@ scripts/build.sh --install
 
 ### Assinatura local e permissões
 
-O `build.sh` assina o app com o certificado local **Kirei Local Signing**, guardado no keychain de login. Assim a identidade do app não muda entre builds e a permissão de Gravação de Tela continua valendo depois de recompilar.
+O `bundle-macos.sh` assina o app com o certificado local **Kirei Local Signing**, guardado no keychain de login. Assim a identidade do app não muda entre builds e a permissão de Gravação de Tela continua valendo depois de recompilar.
 
 Sem esse certificado, o build usa assinatura ad-hoc e o macOS pede a permissão de novo a cada build. Para compilar uma vez e usar, a assinatura ad-hoc basta. O certificado só faz diferença para quem recompila com frequência.
 
@@ -87,7 +79,7 @@ Para criar o certificado (uma vez só):
 1. Abra o **Acesso às Chaves** e vá em **Acesso às Chaves › Assistente de Certificado › Criar um Certificado…**.
 2. Em **Nome**, digite exatamente `Kirei Local Signing`.
 3. Em **Tipo de Identidade**, escolha **Raiz Autoassinada**. Em **Tipo de Certificado**, escolha **Assinatura de Código**.
-4. Clique em **Criar**. Na próxima execução, o `build.sh` encontra o certificado e passa a usá-lo.
+4. Clique em **Criar**. Na próxima execução, o `bundle-macos.sh` encontra o certificado e passa a usá-lo.
 
 Para remover o certificado: **Acesso às Chaves › login › Meus Certificados › "Kirei Local Signing"**.
 
@@ -113,12 +105,12 @@ Na seleção de área, uma lupa mostra os pixels ao redor do cursor, com as coor
 
 Por padrão, aparece uma **miniatura flutuante** no canto da tela. Dá para arrastá-la para outro app, copiar, salvar ou abrir o editor (botão ou clique duplo). Ela some depois de 7 s, mas fica enquanto o mouse estiver em cima. Em **Ajustes › Geral** dá para trocar esse comportamento por "abrir o editor" ou "copiar direto".
 
-A captura tem flash e o som do Kirei: por padrão, uma voz suave dizendo "kirei" (`Resources/kirei-voice.wav`, gerada por `scripts/make-voice.swift`). Em **Ajustes › Geral** dá para trocar pelo som de obturador. Os outros sons são sintetizados no próprio app. A imagem desliza até a miniatura.
+A captura tem flash e o som do Kirei: por padrão, uma voz suave dizendo "kirei" (`Resources/kirei-voice.wav`). Em **Ajustes › Geral** dá para trocar pelo som de obturador. Os outros sons são sintetizados no próprio app. A imagem desliza até a miniatura.
 
 - **⌘C rápido**: enquanto a miniatura está na tela, ⌘C copia a imagem, mesmo com outro app em primeiro plano. Quando a miniatura some, o ⌘C volta a funcionar normalmente nos outros apps. No editor e numa imagem fixada, ⌘C também copia.
 - **Fixar na tela**: pela miniatura, pelo editor (⌘P) ou pelo histórico. A imagem fica por cima de tudo. Arraste para mover, role ou faça pinça para redimensionar, clique duas vezes para editar e use o clique direito para opacidade e "deixar cliques passarem". Esc fecha. As imagens fixadas também fecham pela barra de menus.
 - **Histórico**: barra de menus › Histórico de capturas (⌘Y no app). Guarda os originais dos últimos 14 dias (até 60) em `~/Library/Application Support/Kirei/History`. Dá para desligar em Ajustes.
-- **Gravação**: grava em MP4 (H.264, 60 fps, com cursor). Ao parar, a miniatura oferece salvar MP4, salvar GIF (12 fps, até 960 px) ou copiar. Durante a gravação, o ícone da barra de menus vira um botão de parar.
+- **Gravação** (macOS 15 ou mais novo): grava em MP4 (H.264, 60 fps, com cursor). Ao parar, a miniatura oferece salvar MP4, salvar GIF (12 fps, até 960 px) ou copiar. Durante a gravação, o ícone da barra de menus vira um botão de parar.
 
 ## Editor
 
@@ -170,125 +162,97 @@ No inspetor, Moldura, Layout e Avançado (assinatura, inset, ângulo, granulado 
 
 ## Privacidade
 
-- **Tudo local.** O Kirei não faz nenhuma chamada de rede. OCR e detecção de dados sensíveis rodam no Mac, com o framework Vision.
+- **Tudo local.** O Kirei não faz nenhuma chamada de rede. OCR e detecção de dados sensíveis rodam no Mac, com o framework Vision da Apple.
 - **Histórico sob seu controle.** Fica em `~/Library/Application Support/Kirei/History`, expira em 14 dias (máximo de 60 itens) e pode ser desligado em Ajustes.
-- **Diagnósticos locais.** Relatórios do MetricKit ficam em `~/Library/Logs/Kirei` e não são enviados para lugar nenhum.
+- **Diagnósticos locais.** Relatórios de falha ficam em `~/Library/Logs/Kirei` e não são enviados para lugar nenhum.
 
 > [!IMPORTANT]
 > A ocultação automática é baseada em OCR e reconhecimento de padrões. Ela reduz muito o risco, mas não substitui uma revisão final da imagem antes de compartilhar.
 
 ## Arquitetura
 
-O Kirei é um pacote Swift (`Package.swift`) com um único executável. O `build.sh` monta o `.app` em volta dele (Info.plist, ícone, sons e traduções). O app roda como agente da barra de menus (`LSUIElement`), sem ícone no Dock.
+O Kirei é um crate Rust com uma interface em [GPUI](https://www.gpui.rs/), o framework do editor Zed. O `scripts/bundle-macos.sh` monta o `.app` em volta do binário (Info.plist e ícone). Traduções e a voz "kirei" vão embutidas no binário. O app roda como agente da barra de menus (`LSUIElement`). O ícone no Dock só aparece enquanto há uma janela aberta.
 
-**Frameworks:** SwiftUI, AppKit, ScreenCaptureKit, AVFoundation, Vision, Carbon (atalhos globais), ServiceManagement (abrir ao iniciar) e MetricKit.
+A captura e as integrações com o sistema ficam em `src/capture` e `src/platform`. O resto do app não depende do macOS. Para levar o Kirei ao Windows ou ao Linux, crie os módulos dessas pastas para o novo sistema. A interface continua a mesma.
 
 ```
 kirei/
-├── Package.swift            # Manifesto SwiftPM (macOS 14+)
-├── VERSION                  # Versão de marketing (CFBundleShortVersionString)
-├── Sources/Kirei/           # Código-fonte do app
-├── Resources/               # Sons empacotados (kirei-voice.wav)
+├── Cargo.toml
+├── build.rs                 # Linka as bibliotecas Swift que o crate screencapturekit usa
+├── src/
+│   ├── main.rs              # Ponto de entrada e modos de teste
+│   ├── shell.rs             # Barra de menus, atalhos e menus do app
+│   ├── flow.rs              # O que acontece depois de cada captura
+│   ├── overlay.rs           # Seleção de área ou janela, com lupa
+│   ├── scrolling.rs         # Captura com rolagem (interface)
+│   ├── scroll.rs            # Costura das imagens da rolagem
+│   ├── recorder.rs          # Gravação de tela e exportação em GIF
+│   ├── editor/              # Editor: estado, canvas, inspetor e testes
+│   ├── render/              # Composição (layout, fundos, sombra, texto, desfoque)
+│   ├── model.rs             # Estilo, fundo e anotações
+│   ├── analysis.rs, ocr.rs  # Auto-equilíbrio, OCR e dados sensíveis
+│   ├── thumbnail.rs         # Miniatura flutuante
+│   ├── pinned.rs            # Imagens fixadas na tela
+│   ├── history*.rs          # Histórico e sua janela
+│   ├── settings*.rs         # Preferências e janela de ajustes
+│   ├── welcome.rs           # Onboarding
+│   ├── feedback.rs, flash.rs, countdown.rs, hud.rs
+│   ├── l10n.rs              # Função l() e escolha de idioma
+│   ├── capture/             # Captura por sistema (macOS: ScreenCaptureKit)
+│   ├── platform/            # AppKit, atalhos globais, Vision, vídeo e texto do macOS
+│   └── ui/                  # Tema, ícones, controles e campo de texto
+├── assets/                  # Ícone do app
+├── Resources/               # Voz "kirei"
 ├── Localization/            # en, pt-BR e es (.lproj)
-└── scripts/
-    ├── build.sh             # Build, assinatura, instalação, DMG e notarização
-    ├── make-icon.swift      # Gera o ícone 1024 px
-    ├── make-dmg-background.swift
-    └── make-voice.swift     # Gera a voz "kirei"
+└── scripts/bundle-macos.sh  # Build, assinatura e instalação
 ```
-
-### Módulos
-
-| Arquivo | Responsabilidade |
-|---|---|
-| `main.swift` / `AppDelegate.swift` | Ponto de entrada, barra de menus, atalhos e autotestes |
-| `Capture.swift` | Captura com ScreenCaptureKit (usando a permissão do próprio Kirei), exportação e HUD |
-| `SelectionOverlay.swift` | Sobreposição de seleção de área ou janela, com lupa |
-| `ScrollingCapture.swift` | Captura com rolagem (costura por hash das linhas) |
-| `Recorder.swift` | Gravação de tela (ScreenCaptureKit + AVAssetWriter) e exportação em GIF |
-| `Renderer.swift` | Composição (layout, fundo, sombra) e desenho das anotações |
-| `Art.swift` | Fundos procedurais (campos calculados por pixel, com cache) |
-| `ImageAnalysis.swift` | Auto-equilíbrio, OCR e detecção de dados sensíveis |
-| `EditorModel.swift` / `EditorView.swift` / `EditorWindowController.swift` | Estado, interface e janela do editor |
-| `CanvasView.swift` | Pré-visualização interativa e manipulação das anotações |
-| `Annotation.swift` / `Style.swift` | Modelos de anotação e de estilo |
-| `FloatingPreview.swift` | Miniatura flutuante depois da captura |
-| `PinnedImage.swift` | Imagens fixadas na tela |
-| `History.swift` | Histórico de capturas e sua janela |
-| `CaptureFeedback.swift` | Sons sintetizados, flash, animação até a miniatura, temporizador e vibração |
-| `Settings.swift` / `SettingsView.swift` | Preferências (janela com abas), presets e atalhos globais (Carbon) |
-| `Onboarding.swift` | Boas-vindas, permissão de Gravação de Tela e atalhos |
-| `Chrome.swift` | Vibrancy, Liquid Glass (macOS 26), área de arrastar da janela e miniaturas de estilos |
-| `Localization.swift` | Função `L()` e escolha de idioma |
-| `Diagnostics.swift` | Relatórios do MetricKit em `~/Library/Logs/Kirei` |
-| `Logo.swift` | Logotipo desenhado em código |
 
 ## Desenvolvimento
 
 ```bash
-swift build                 # build de debug em .build/debug/Kirei
-swift build -c release      # build de release
-scripts/build.sh            # monta o .app completo em build/Kirei.app
+cargo build                         # build de debug
+cargo test                          # testes de modelos, traduções, OCR, exportação, histórico e editor
+scripts/bundle-macos.sh             # monta o .app em target/debug/Kirei.app
 ```
 
 > [!TIP]
-> Para testar captura e permissões, use sempre o `.app` gerado pelo `build.sh`. O binário solto em `.build/` não tem Info.plist, ícone nem traduções.
+> Para testar captura e permissões, use sempre o `.app`. Com `cargo run`, a permissão de Gravação de Tela fica com o terminal, não com o app.
 
-### Autotestes
+### Modos de teste
 
-O binário aceita dois modos de teste, sem interface:
+O binário tem modos sem barra de menus nem atalhos globais:
 
 ```bash
-# Renderizador: aplica um estilo a uma imagem e salva o resultado
-.build/debug/Kirei --render-test entrada.png saida.png [estilo.json]
-
-# Captura com rolagem: simula uma rolagem com cabeçalho e rodapé fixos
-.build/debug/Kirei --scroll-test imagem-alta.png saida.png
+kirei --render-test entrada.png saida.png [estilo.json]   # aplica um estilo a uma imagem
+kirei --scroll-test imagem-alta.png saida.png             # simula uma captura com rolagem
+kirei --record-test saida.mp4 [id-da-janela]              # grava 2 s de uma área ou janela
+kirei --gif-test video.mp4                                # gera o pôster e o GIF de um vídeo
+kirei --edit imagem.png                                   # abre só o editor
+kirei --show settings|history|welcome|recording-controls  # abre só uma janela
 ```
+
+Com `--edit` e `--show`, os dados ficam numa pasta temporária e o app não rouba o foco.
 
 ### Versionamento
 
-- A versão de marketing fica no arquivo `VERSION` (hoje, `1.2.0`).
-- O número do build é gerado a cada compilação, a partir da data e hora (`AAAAMMDDhhmm`).
+- A versão fica em `Cargo.toml` (hoje, `1.2.0`) e vai para o Info.plist.
 - O bundle identifier é `com.shiddo.kirei`.
 
 ### Idiomas
 
-O app está em inglês, português (Brasil) e espanhol. Por padrão, segue o idioma do macOS. Dá para trocar em **Ajustes › Sistema › Idioma** (é preciso reiniciar o app).
+O app está em inglês, português (Brasil) e espanhol. Por padrão, segue o idioma do macOS. Dá para trocar em **Ajustes › Geral › Idioma** (é preciso reiniciar o app).
 
-- No código, os textos usam `L("English text")`. A chave é o próprio texto em inglês, então uma tradução que faltar aparece em inglês.
-- As traduções ficam em `Localization/<idioma>.lproj/Localizable.strings`. O `scripts/build.sh` copia essas pastas para dentro do app (o `pt-BR` também é copiado como `pt`, para cobrir o português fora do Brasil).
+- No código, os textos usam `l("English text")`. A chave é o próprio texto em inglês, então uma tradução que faltar aparece em inglês.
+- As traduções ficam em `Localization/<idioma>.lproj/Localizable.strings` e vão embutidas no binário.
 
-Para incluir um idioma:
+Para incluir um idioma, crie a pasta `Localization/<idioma>.lproj` com as mesmas chaves e adicione o idioma em `src/l10n.rs`.
 
-1. Crie uma pasta `Localization/<idioma>.lproj` com as mesmas chaves.
-2. Adicione o idioma em `CFBundleLocalizations`, no `build.sh`.
-3. Crie o caso correspondente em `AppLanguage` (`Localization.swift`).
+## Pendências
 
-## Distribuição
-
-Para o Gatekeeper aceitar o app em outros Macs, é preciso uma conta paga do Apple Developer Program.
-
-```bash
-# Uma vez: guarda as credenciais da notarização no keychain
-xcrun notarytool store-credentials kirei --apple-id <email> --team-id <TEAMID>
-
-# Build assinado, notarizado e grampeado
-DEVELOPER_ID="Developer ID Application: <Nome> (<TEAMID>)" \
-NOTARY_PROFILE=kirei \
-scripts/build.sh --dmg
-```
-
-| Variável | Efeito |
-|---|---|
-| `DEVELOPER_ID` | Assina o app e o DMG com Developer ID e hardened runtime |
-| `NOTARY_PROFILE` | Envia o DMG para notarização e grampeia o ticket (staple). Exige `DEVELOPER_ID`. |
-
-Ordem de assinatura usada pelo `build.sh`:
-
-1. `DEVELOPER_ID`, se definido (distribuição).
-2. Certificado local **Kirei Local Signing**, se existir no keychain (desenvolvimento).
-3. Assinatura ad-hoc (a permissão de Gravação de Tela é pedida a cada build).
+- DMG e notarização para distribuir fora do próprio Mac.
+- Traduções e número de build no bundle (hoje o Info.plist só tem a versão).
+- Gravação de tela no macOS 14 (o app usa `SCRecordingOutput`, que existe a partir do macOS 15).
+- Windows e Linux.
 
 ## Contribuindo
 

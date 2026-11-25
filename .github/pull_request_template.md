@@ -2,7 +2,7 @@
 
 ## Como testar
 
-- [ ] `swift build` compila sem erros
-- [ ] Testado no `.app` gerado pelo `scripts/build.sh`
+- [ ] `cargo build` compila e `cargo test` passa
+- [ ] Testado no `.app` gerado pelo `scripts/bundle-macos.sh`
 - [ ] Textos novos traduzidos em en, pt-BR e es (ou avisado abaixo)
 - [ ] Capturas de antes e depois (se a mudança for visual)
