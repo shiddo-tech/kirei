@@ -1,8 +1,8 @@
-## O que muda
+## What changes
 
-## Como testar
+## How to test
 
-- [ ] `cargo build` compila e `cargo test` passa
-- [ ] Testado no `.app` gerado pelo `scripts/bundle-macos.sh`
-- [ ] Textos novos traduzidos em en, pt-BR e es (ou avisado abaixo)
-- [ ] Capturas de antes e depois (se a mudança for visual)
+- [ ] `cargo build` succeeds and `cargo test` passes
+- [ ] Tested with the `.app` bundle produced by `scripts/bundle-macos.sh`
+- [ ] New strings translated into en, pt-BR and es (or noted below)
+- [ ] Before and after screenshots attached (for visual changes)

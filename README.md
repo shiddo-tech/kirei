@@ -1,52 +1,57 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="Ícone do Kirei" width="128" height="128">
+<img src="assets/icon.png" alt="Kirei app icon" width="128" height="128">
 
 # Kirei
 
-**Capturas de tela bonitas e prontas para compartilhar, com um atalho.**
+**Beautiful, share-ready screenshots. One shortcut away.**
 
-App para macOS feito em Rust com [GPUI](https://www.gpui.rs/), com ocultação automática de dados sensíveis (inclusive CPF e CNPJ).
+A native macOS app built in Rust with [GPUI](https://www.gpui.rs/) that frames your captures and redacts sensitive data before anything leaves your screen.
 
-![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-black)
-![Plataforma](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
+![Version](https://img.shields.io/badge/version-1.2.0-black)
+![Platform](https://img.shields.io/badge/macOS-14%2B-black?logo=apple)
 ![Rust](https://img.shields.io/badge/Rust-2024-black?logo=rust)
-![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-black)
-![Idiomas](https://img.shields.io/badge/idiomas-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-black)
+![License](https://img.shields.io/badge/license-MIT-black)
+![Languages](https://img.shields.io/badge/languages-EN%20%C2%B7%20PT--BR%20%C2%B7%20ES-black)
 
-[Destaques](#destaques) · [Instalação](#instalação) · [Atalhos](#atalhos-globais) · [Editor](#editor) · [Privacidade](#privacidade) · [Arquitetura](#arquitetura) · [Desenvolvimento](#desenvolvimento) · [Distribuição](#distribuição) · [Contribuindo](#contribuindo) · [Licença](#licença)
+[Highlights](#highlights) · [Installation](#installation) · [Shortcuts](#global-shortcuts) · [Editor](#editor) · [Privacy](#privacy) · [Architecture](#architecture) · [Development](#development) · [Roadmap](#roadmap) · [Contributing](#contributing) · [License](#license)
+
+<br>
+
+<img src="assets/hero.png" alt="A code screenshot composed by Kirei with a window frame, soft shadow and mesh gradient background" width="820">
+
 </div>
 
 ---
 
-## Sobre
+## Overview
 
-O Kirei (綺麗, "bonito" em japonês) transforma uma captura de tela comum numa imagem pronta para post, documentação ou apresentação. Você captura, o app aplica fundo, moldura, sombra e cantos arredondados, e esconde e-mails, telefones, cartões, CPFs e chaves de API antes de você compartilhar.
+Kirei (綺麗, Japanese for "beautiful") turns an ordinary screenshot into an image ready for a post, a doc or a slide. Capture once, and Kirei applies the background, frame, shadow and rounded corners for you. It also masks emails, phone numbers, card numbers, CPF/CNPJ and API keys before you share.
 
-Ele vive na barra de menus, responde a atalhos globais e funciona 100% no seu Mac. Não há conta, servidor nem envio de dados.
+Kirei lives in the menu bar, responds to global shortcuts and runs entirely on your Mac. No account, no server, no data ever leaves your machine.
 
-## Destaques
+## Highlights
 
 | | |
 |---|---|
-| **Captura completa** | Área, janela, tela inteira, captura com rolagem, gravação de tela (MP4/GIF) e OCR direto para a área de transferência. |
-| **Composição automática** | Auto-equilíbrio, 27 fundos procedurais, molduras de janela e navegador, sombra em duas camadas e cantos contínuos (squircle). |
-| **Dados sensíveis ocultos** | OCR com Vision e detecção de e-mail, telefone, cartão (Luhn), CPF, CNPJ, IP, chaves de API e JWT. |
-| **Anotações** | Seta, retângulo, elipse, marca-texto, texto, contador numerado, pixelizar, desfocar e recorte, com guias de alinhamento. |
-| **Fluxo rápido** | Miniatura flutuante, ⌘C imediato, fixar imagem na tela e histórico dos últimos 14 dias. |
-| **Integrado ao macOS** | ScreenCaptureKit, Vision, vibração no trackpad e interface em três idiomas. Feito para chegar também ao Windows e ao Linux. |
+| **Every kind of capture** | Area, window, full screen, scrolling capture, screen recording (MP4/GIF) and OCR straight to the clipboard. |
+| **Automatic composition** | Auto-balance, 27 procedural backgrounds, window and browser frames, a two-layer shadow and continuous (squircle) corners. |
+| **Sensitive data redaction** | On-device OCR with Apple Vision detects emails, phone numbers, credit cards (Luhn-validated), CPF, CNPJ, IP addresses, API keys and JWTs. |
+| **Annotations** | Arrow, rectangle, ellipse, highlighter, text, numbered counter, pixelate, blur and crop, with smart alignment guides. |
+| **Fast workflow** | Floating thumbnail, instant ⌘C, pin-to-screen and a 14-day capture history. |
+| **Native to macOS** | ScreenCaptureKit, Vision, trackpad haptics and a fully localized interface in three languages. Architected to reach Windows and Linux. |
 
-## Requisitos
+## Requirements
 
-- macOS 14 (Sonoma) ou mais recente. A gravação de tela exige macOS 15.
-- Para compilar: [Rust](https://rustup.rs) e as Command Line Tools do Xcode (`xcode-select --install`). O Xcode completo não é necessário.
-- Permissão de **Gravação de Tela e Áudio do Sistema**
+- macOS 14 Sonoma or later. Screen recording requires macOS 15.
+- To build: [Rust](https://rustup.rs) and the Xcode Command Line Tools (`xcode-select --install`). A full Xcode install is not required.
+- **Screen & System Audio Recording** permission.
 
-## Instalação
+## Installation
 
-### Compilar a partir do código
+### Build from source
 
-Você não precisa de conta de desenvolvedor da Apple nem do Xcode completo.
+No Apple Developer account or full Xcode install required.
 
 ```bash
 git clone https://github.com/shiddo-tech/kirei.git
@@ -54,221 +59,221 @@ cd kirei
 scripts/bundle-macos.sh --install
 ```
 
-| Comando | O que faz |
+| Command | What it does |
 |---|---|
-| `scripts/bundle-macos.sh` | Compila em debug e monta `target/debug/Kirei.app` |
-| `scripts/bundle-macos.sh --release` | Compila em release e monta `target/release/Kirei.app` |
-| `scripts/bundle-macos.sh --install` | Compila em release, assina e copia para `/Applications` |
+| `scripts/bundle-macos.sh` | Debug build, bundled as `target/debug/Kirei.app` |
+| `scripts/bundle-macos.sh --release` | Release build, bundled as `target/release/Kirei.app` |
+| `scripts/bundle-macos.sh --install` | Release build, signed and copied to `/Applications` |
 
-O primeiro build leva alguns minutos, porque o GPUI compila muita coisa. Os seguintes são incrementais.
+The first build takes a few minutes while GPUI compiles. Subsequent builds are incremental.
 
-### Primeira execução
+### First launch
 
-1. Abra o Kirei. O onboarding apresenta o app e os atalhos.
-2. Na primeira captura, autorize em **Ajustes do Sistema › Privacidade e Segurança › Gravação de Tela e Áudio do Sistema**.
-3. Reabra o app.
+1. Open Kirei. The onboarding walks you through the app and its shortcuts.
+2. On your first capture, grant access in **System Settings › Privacy & Security › Screen & System Audio Recording**.
+3. Relaunch the app.
 
-### Assinatura local e permissões
+### Local code signing and permissions
 
-O `bundle-macos.sh` assina o app com o certificado local **Kirei Local Signing**, guardado no keychain de login. Assim a identidade do app não muda entre builds e a permissão de Gravação de Tela continua valendo depois de recompilar.
+`bundle-macos.sh` signs the app with a local certificate named **Kirei Local Signing**, stored in your login keychain. This keeps the app's identity stable across builds, so the Screen Recording permission survives every recompile.
 
-Sem esse certificado, o build usa assinatura ad-hoc e o macOS pede a permissão de novo a cada build. Para compilar uma vez e usar, a assinatura ad-hoc basta. O certificado só faz diferença para quem recompila com frequência.
+Without the certificate, the build falls back to ad-hoc signing and macOS asks for permission again after each build. Ad-hoc signing is fine if you build once and use the app. The certificate only matters if you rebuild often.
 
-Para criar o certificado (uma vez só):
+To create the certificate (one-time setup):
 
-1. Abra o **Acesso às Chaves** e vá em **Acesso às Chaves › Assistente de Certificado › Criar um Certificado…**.
-2. Em **Nome**, digite exatamente `Kirei Local Signing`.
-3. Em **Tipo de Identidade**, escolha **Raiz Autoassinada**. Em **Tipo de Certificado**, escolha **Assinatura de Código**.
-4. Clique em **Criar**. Na próxima execução, o `bundle-macos.sh` encontra o certificado e passa a usá-lo.
+1. Open **Keychain Access** and choose **Keychain Access › Certificate Assistant › Create a Certificate…**.
+2. For **Name**, enter exactly `Kirei Local Signing`.
+3. For **Identity Type**, choose **Self-Signed Root**. For **Certificate Type**, choose **Code Signing**.
+4. Click **Create**. The next run of `bundle-macos.sh` picks it up automatically.
 
-Para remover o certificado: **Acesso às Chaves › login › Meus Certificados › "Kirei Local Signing"**.
+To remove it later: **Keychain Access › login › My Certificates › "Kirei Local Signing"**.
 
-## Atalhos globais
+## Global shortcuts
 
-Todos os atalhos podem ser trocados em **Ajustes**.
+Every shortcut can be remapped in **Settings**.
 
-| Atalho | Ação |
+| Shortcut | Action |
 |---|---|
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>1</kbd> | Capturar área. Arraste para selecionar; Espaço ou clique escolhe uma janela; Esc cancela. |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>2</kbd> | Capturar janela |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>3</kbd> | Capturar a tela sob o mouse |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>4</kbd> | Capturar texto (OCR direto para a área de transferência) |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>5</kbd> | Editar a imagem copiada |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>6</kbd> | Gravar a tela (área ou janela). O mesmo atalho para a gravação. |
-| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>7</kbd> | Captura com rolagem: selecione a área e role para baixo devagar |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>1</kbd> | Capture area. Drag to select; press Space or click to pick a window; Esc cancels. |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>2</kbd> | Capture window |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>3</kbd> | Capture the screen under the pointer |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>4</kbd> | Capture text (OCR straight to the clipboard) |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>5</kbd> | Edit the image on the clipboard |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>6</kbd> | Record the screen (area or window). Press again to stop. |
+| <kbd>⌥</kbd><kbd>⇧</kbd><kbd>7</kbd> | Scrolling capture: select an area, then scroll down slowly |
 
-Em **Ajustes › Geral › Captura** há temporizador (3, 5 ou 10 s; clique na contagem para cancelar) e a opção de ocultar os ícones da mesa.
+**Settings › General › Capture** adds a self-timer (3, 5 or 10 s; click the countdown to cancel) and an option to hide desktop icons.
 
-Na seleção de área, uma lupa mostra os pixels ao redor do cursor, com as coordenadas.
+During area selection, a magnifier shows the pixels around the cursor along with exact coordinates.
 
-## Depois da captura
+## After capture
 
-Por padrão, aparece uma **miniatura flutuante** no canto da tela. Dá para arrastá-la para outro app, copiar, salvar ou abrir o editor (botão ou clique duplo). Ela some depois de 7 s, mas fica enquanto o mouse estiver em cima. Em **Ajustes › Geral** dá para trocar esse comportamento por "abrir o editor" ou "copiar direto".
+By default, a **floating thumbnail** appears in the corner of the screen. Drag it into any app, copy it, save it or open the editor (button or double-click). It dismisses itself after 7 s and stays put while the pointer hovers over it. In **Settings › General** you can switch this to "Open the editor" or copy directly.
 
-A captura tem flash e o som do Kirei: por padrão, uma voz suave dizendo "kirei" (`Resources/kirei-voice.wav`). Em **Ajustes › Geral** dá para trocar pelo som de obturador. Os outros sons são sintetizados no próprio app. A imagem desliza até a miniatura.
+Each capture comes with a flash and Kirei's signature sound: by default, a soft voice saying "kirei" (`Resources/kirei-voice.wav`). Prefer a classic shutter? Switch it in **Settings › General**. All other sounds are synthesized in-app. The image then glides into the thumbnail.
 
-- **⌘C rápido**: enquanto a miniatura está na tela, ⌘C copia a imagem, mesmo com outro app em primeiro plano. Quando a miniatura some, o ⌘C volta a funcionar normalmente nos outros apps. No editor e numa imagem fixada, ⌘C também copia.
-- **Fixar na tela**: pela miniatura, pelo editor (⌘P) ou pelo histórico. A imagem fica por cima de tudo. Arraste para mover, role ou faça pinça para redimensionar, clique duas vezes para editar e use o clique direito para opacidade e "deixar cliques passarem". Esc fecha. As imagens fixadas também fecham pela barra de menus.
-- **Histórico**: barra de menus › Histórico de capturas (⌘Y no app). Guarda os originais dos últimos 14 dias (até 60) em `~/Library/Application Support/Kirei/History`. Dá para desligar em Ajustes.
-- **Gravação** (macOS 15 ou mais novo): grava em MP4 (H.264, 60 fps, com cursor). Ao parar, a miniatura oferece salvar MP4, salvar GIF (12 fps, até 960 px) ou copiar. Durante a gravação, o ícone da barra de menus vira um botão de parar.
+- **Instant ⌘C**: while the thumbnail is on screen, ⌘C copies the capture, even when another app is in front. Once the thumbnail is gone, ⌘C goes back to normal in other apps. ⌘C also copies from the editor and from pinned images.
+- **Pin to Screen**: from the thumbnail, the editor (⌘P) or the history. The image floats above everything. Drag to move, scroll or pinch to resize, double-click to edit, and right-click for opacity and click-through. Esc closes it; pinned images can also be closed from the menu bar.
+- **Capture History**: menu bar › Capture History… (⌘Y in the app). Originals from the last 14 days (up to 60) are kept in `~/Library/Application Support/Kirei/History`. Can be turned off in Settings.
+- **Screen recording** (macOS 15 or later): records MP4 (H.264, 60 fps, cursor included). When you stop, the thumbnail lets you save as MP4, save as GIF (12 fps, up to 960 px) or copy. While recording, the menu bar icon becomes a stop button.
 
 ## Editor
 
-### Composição
+### Composition
 
-- **Auto-equilíbrio**: remove bordas uniformes e centraliza o conteúdo.
-- **Fundo**: aba Arte com 27 fundos procedurais (mesh e degradês lineares e radiais, misturados em OKLab). O botão "Variar" mantém as cores e gera novas formas. Também há cores sólidas, cor personalizada, imagem, papel de parede ou transparente, com granulado opcional.
-- **Moldura**: janela do macOS ou navegador, clara ou escura, e assinatura (@seunome) no canto.
-- **Layout**: margem, inset (preenchido com a cor da borda), cantos arredondados, sombra, proporção (1:1, 4:3, 16:9, 9:16, 4:5…) e posição 3×3.
-- **Moldura fina**: uma borda de meio ponto separa a captura do fundo (pode desligar em Layout). Os cantos são contínuos (squircle) e a sombra tem duas camadas, uma de contato e uma ambiente.
+- **Auto-balance**: trims uniform borders and centers the content.
+- **Background**: the Art tab offers 27 procedural backgrounds (mesh, linear and radial gradients, blended in OKLab). **Vary** keeps the palette and generates new shapes. Also available: solid colors, a custom color, an image, your wallpaper or transparency, with optional grain.
+- **Frame**: macOS window or browser chrome, light or dark, plus a corner signature (@yourname).
+- **Layout**: padding, inset (filled with the edge color), corner radius, shadow, aspect ratio (1:1, 4:3, 16:9, 9:16, 4:5…) and 3×3 positioning.
+- **Hairline border**: a half-point stroke separates the capture from the background (can be disabled under Layout). Corners are continuous (squircle) and the shadow has two layers: a tight contact shadow and a soft ambient one.
 
-### Anotações
+### Annotations
 
-Seta, retângulo, elipse, marca-texto, texto, contador numerado, pixelizar, desfocar e recorte.
+Arrow, rectangle, ellipse, highlighter, text, numbered counter, pixelate, blur and crop.
 
-- **Seleção**: clique, ⇧+clique, arrastar um retângulo ou ⌘A.
-- **Edição**: mover, redimensionar pelos cantos (o texto também), editar texto com duplo clique, duplicar (⌘D ou ⌥+arrastar), trazer para frente ou enviar para trás, apagar (⌫), mudar cor e espessura, desfazer e refazer.
-- Com uma ferramenta de desenho ativa, arrastar pela borda de um objeto já o move. O clique direito abre o menu do objeto.
-- **Contador**: o número se edita com duplo clique. Um número reinicia a sequência a partir dele. Um texto (uma letra, por exemplo) aparece sem ocupar um número. Apague o valor para voltar à numeração automática.
-- **Guias de alinhamento**: ao mover anotações, elas encaixam no centro e nas bordas da captura e das outras anotações, com vibração no trackpad. Segure ⌘ para mover livre.
+- **Selection**: click, ⇧-click, drag a marquee or press ⌘A.
+- **Editing**: move, resize by the corners (text included), double-click to edit text, duplicate (⌘D or ⌥-drag), bring forward or send backward, delete (⌫), change color and stroke width, undo and redo.
+- With a drawing tool active, dragging an existing object's edge moves it. Right-click opens the object's context menu.
+- **Counter**: double-click to edit the number. A number restarts the sequence from that value. Text (a single letter, for example) is displayed without consuming a number. Clear the value to return to automatic numbering.
+- **Alignment guides**: annotations snap to the center and edges of the capture and of other annotations, with trackpad haptic feedback. Hold ⌘ to move freely.
 
-### Texto e dados sensíveis
+### Text and sensitive data
 
-- **Ocultar dados sensíveis**: OCR (Vision) e detecção de e-mail, telefone, cartão (Luhn), CPF, CNPJ, IP, chaves de API e JWT. Os trechos encontrados são pixelizados.
-- **Copiar texto (OCR)**: extrai todo o texto da imagem.
+- **Hide sensitive data**: on-device OCR (Vision) detects emails, phone numbers, credit cards (Luhn), CPF, CNPJ, IP addresses, API keys and JWTs, and pixelates every match.
+- **Copy Text (OCR)**: extracts all text from the image.
 
-### Exportação e estilos
+### Export and styles
 
-- **Exportar**: copiar (⌘C), salvar na pasta padrão (⌘S), salvar como PNG, JPEG ou HEIC (⇧⌘S), arrastar para outros apps e compartilhar. Em Ajustes dá para exportar em @1x.
-- **Estilos salvos**: cartões com miniatura no inspetor. Clique com o botão direito para atualizar ou apagar. O último estilo usado vira o padrão.
+- **Export**: copy (⌘C), save to the default folder (⌘S), save as PNG, JPEG or HEIC (⇧⌘S), drag into other apps, or share. A Settings option exports at @1x.
+- **Saved styles**: thumbnail cards in the inspector. Right-click to update or delete. The last style used becomes the default.
 
 ### Interface
 
-Ferramentas parecidas dividem um botão (retângulo/elipse, pixelizar/desfocar). Clique de novo no botão ativo para alternar, ou use o clique direito. Cor e espessura ficam num único círculo, que só aparece com ferramenta de desenho ou anotação selecionada.
+Related tools share a single button (rectangle/ellipse, pixelate/blur). Click the active button again to switch, or right-click it. Color and stroke width live in a single swatch that only appears when a drawing tool or annotation is selected.
 
-No inspetor, Moldura, Layout e Avançado (assinatura, inset, ângulo, granulado e moldura fina) são recolhíveis e lembram se estavam abertos. Os fundos mostram uma linha e um "Mostrar mais". Restaurar padrão e Atalhos ficam no menu ⋯.
+In the inspector, the Frame, Layout and Advanced sections (signature, inset, angle, grain and hairline border) are collapsible and remember their state. Backgrounds show a single row with **Show More**. Restore Default and Shortcuts are in the ⋯ menu.
 
-### Teclas do editor
+### Editor keys
 
-| Tecla | Ação |
+| Key | Action |
 |---|---|
-| <kbd>V</kbd> <kbd>A</kbd> <kbd>R</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>T</kbd> <kbd>N</kbd> <kbd>P</kbd> <kbd>B</kbd> <kbd>C</kbd> | Ferramentas |
-| <kbd>⌫</kbd> | Apagar seleção |
-| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Mover 1 px (com <kbd>⇧</kbd>, 10 px) |
-| <kbd>Esc</kbd> | Desmarcar |
-| <kbd>⌘</kbd><kbd>C</kbd> / <kbd>⌘</kbd><kbd>S</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd> | Copiar / Salvar / Salvar como |
-| <kbd>⌘</kbd><kbd>D</kbd> | Duplicar |
-| <kbd>⌘</kbd><kbd>P</kbd> | Fixar na tela |
+| <kbd>V</kbd> <kbd>A</kbd> <kbd>R</kbd> <kbd>O</kbd> <kbd>H</kbd> <kbd>T</kbd> <kbd>N</kbd> <kbd>P</kbd> <kbd>B</kbd> <kbd>C</kbd> | Tools |
+| <kbd>⌫</kbd> | Delete selection |
+| <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> | Nudge 1 px (10 px with <kbd>⇧</kbd>) |
+| <kbd>Esc</kbd> | Deselect |
+| <kbd>⌘</kbd><kbd>C</kbd> / <kbd>⌘</kbd><kbd>S</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd> | Copy / Save / Save As |
+| <kbd>⌘</kbd><kbd>D</kbd> | Duplicate |
+| <kbd>⌘</kbd><kbd>P</kbd> | Pin to Screen |
 
-## Privacidade
+## Privacy
 
-- **Tudo local.** O Kirei não faz nenhuma chamada de rede. OCR e detecção de dados sensíveis rodam no Mac, com o framework Vision da Apple.
-- **Histórico sob seu controle.** Fica em `~/Library/Application Support/Kirei/History`, expira em 14 dias (máximo de 60 itens) e pode ser desligado em Ajustes.
-- **Diagnósticos locais.** Relatórios de falha ficam em `~/Library/Logs/Kirei` e não são enviados para lugar nenhum.
+- **Fully local.** Kirei makes no network requests. OCR and sensitive-data detection run on your Mac using Apple's Vision framework.
+- **History you control.** Stored in `~/Library/Application Support/Kirei/History`, expires after 14 days (60 items max) and can be turned off in Settings.
+- **Local diagnostics.** Crash reports are written to `~/Library/Logs/Kirei` and never sent anywhere.
 
 > [!IMPORTANT]
-> A ocultação automática é baseada em OCR e reconhecimento de padrões. Ela reduz muito o risco, mas não substitui uma revisão final da imagem antes de compartilhar.
+> Automatic redaction relies on OCR and pattern matching. It greatly reduces risk, but it is not a substitute for a final review before you share an image.
 
-## Arquitetura
+## Architecture
 
-O Kirei é um crate Rust com uma interface em [GPUI](https://www.gpui.rs/), o framework do editor Zed. O `scripts/bundle-macos.sh` monta o `.app` em volta do binário (Info.plist e ícone). Traduções e a voz "kirei" vão embutidas no binário. O app roda como agente da barra de menus (`LSUIElement`). O ícone no Dock só aparece enquanto há uma janela aberta.
+Kirei is a single Rust crate with a [GPUI](https://www.gpui.rs/) interface, the UI framework behind the Zed editor. `scripts/bundle-macos.sh` wraps the binary in a `.app` bundle (Info.plist and icon). Translations and the "kirei" voice are embedded in the binary. The app runs as a menu bar agent (`LSUIElement`); its Dock icon appears only while a window is open.
 
-A captura e as integrações com o sistema ficam em `src/capture` e `src/platform`. O resto do app não depende do macOS. Para levar o Kirei ao Windows ou ao Linux, crie os módulos dessas pastas para o novo sistema. A interface continua a mesma.
+Capture and OS integrations are isolated in `src/capture` and `src/platform`. Everything else is platform-agnostic. Porting Kirei to Windows or Linux means implementing those modules for the new OS; the interface stays the same.
 
 ```
 kirei/
 ├── Cargo.toml
-├── build.rs                 # Linka as bibliotecas Swift que o crate screencapturekit usa
+├── build.rs                 # Links the Swift libraries used by the screencapturekit crate
 ├── src/
-│   ├── main.rs              # Ponto de entrada e modos de teste
-│   ├── shell.rs             # Barra de menus, atalhos e menus do app
-│   ├── flow.rs              # O que acontece depois de cada captura
-│   ├── overlay.rs           # Seleção de área ou janela, com lupa
-│   ├── scrolling.rs         # Captura com rolagem (interface)
-│   ├── scroll.rs            # Costura das imagens da rolagem
-│   ├── recorder.rs          # Gravação de tela e exportação em GIF
-│   ├── editor/              # Editor: estado, canvas, inspetor e testes
-│   ├── render/              # Composição (layout, fundos, sombra, texto, desfoque)
-│   ├── model.rs             # Estilo, fundo e anotações
-│   ├── analysis.rs, ocr.rs  # Auto-equilíbrio, OCR e dados sensíveis
-│   ├── thumbnail.rs         # Miniatura flutuante
-│   ├── pinned.rs            # Imagens fixadas na tela
-│   ├── history*.rs          # Histórico e sua janela
-│   ├── settings*.rs         # Preferências e janela de ajustes
+│   ├── main.rs              # Entry point and test modes
+│   ├── shell.rs             # Menu bar, shortcuts and app menus
+│   ├── flow.rs              # What happens after each capture
+│   ├── overlay.rs           # Area and window selection, with magnifier
+│   ├── scrolling.rs         # Scrolling capture (UI)
+│   ├── scroll.rs            # Stitching for scrolling captures
+│   ├── recorder.rs          # Screen recording and GIF export
+│   ├── editor/              # Editor: state, canvas, inspector and tests
+│   ├── render/              # Composition (layout, backgrounds, shadow, text, blur)
+│   ├── model.rs             # Style, background and annotations
+│   ├── analysis.rs, ocr.rs  # Auto-balance, OCR and sensitive data
+│   ├── thumbnail.rs         # Floating thumbnail
+│   ├── pinned.rs            # Pinned images
+│   ├── history*.rs          # History and its window
+│   ├── settings*.rs         # Preferences and the Settings window
 │   ├── welcome.rs           # Onboarding
 │   ├── feedback.rs, flash.rs, countdown.rs, hud.rs
-│   ├── l10n.rs              # Função l() e escolha de idioma
-│   ├── capture/             # Captura por sistema (macOS: ScreenCaptureKit)
-│   ├── platform/            # AppKit, atalhos globais, Vision, vídeo e texto do macOS
-│   └── ui/                  # Tema, ícones, controles e campo de texto
-├── assets/                  # Ícone do app
-├── Resources/               # Voz "kirei"
-├── Localization/            # en, pt-BR e es (.lproj)
-└── scripts/bundle-macos.sh  # Build, assinatura e instalação
+│   ├── l10n.rs              # l() function and language selection
+│   ├── capture/             # Per-OS capture (macOS: ScreenCaptureKit)
+│   ├── platform/            # macOS AppKit, global hotkeys, Vision, video and text
+│   └── ui/                  # Theme, icons, controls and text input
+├── assets/                  # App icon
+├── Resources/               # "kirei" voice
+├── Localization/            # en, pt-BR and es (.lproj)
+└── scripts/bundle-macos.sh  # Build, signing and installation
 ```
 
-## Desenvolvimento
+## Development
 
 ```bash
-cargo build                         # build de debug
-cargo test                          # testes de modelos, traduções, OCR, exportação, histórico e editor
-scripts/bundle-macos.sh             # monta o .app em target/debug/Kirei.app
+cargo build                         # debug build
+cargo test                          # model, localization, OCR, export, history and editor tests
+scripts/bundle-macos.sh             # bundles target/debug/Kirei.app
 ```
 
 > [!TIP]
-> Para testar captura e permissões, use sempre o `.app`. Com `cargo run`, a permissão de Gravação de Tela fica com o terminal, não com o app.
+> Always test capture and permissions with the `.app` bundle. Under `cargo run`, the Screen Recording permission is granted to your terminal, not to Kirei.
 
-### Modos de teste
+### Test modes
 
-O binário tem modos sem barra de menus nem atalhos globais:
+The binary includes headless modes with no menu bar and no global shortcuts:
 
 ```bash
-kirei --render-test entrada.png saida.png [estilo.json]   # aplica um estilo a uma imagem
-kirei --scroll-test imagem-alta.png saida.png             # simula uma captura com rolagem
-kirei --record-test saida.mp4 [id-da-janela]              # grava 2 s de uma área ou janela
-kirei --gif-test video.mp4                                # gera o pôster e o GIF de um vídeo
-kirei --edit imagem.png                                   # abre só o editor
-kirei --show settings|history|welcome|recording-controls  # abre só uma janela
+kirei --render-test input.png output.png [style.json]     # apply a style to an image
+kirei --scroll-test tall-image.png output.png             # simulate a scrolling capture
+kirei --record-test output.mp4 [window-id]                # record 2 s of an area or window
+kirei --gif-test video.mp4                                # generate a video's poster and GIF
+kirei --edit image.png                                    # open the editor only
+kirei --show settings|history|welcome|recording-controls  # open a single window
 ```
 
-Com `--edit` e `--show`, os dados ficam numa pasta temporária e o app não rouba o foco.
+With `--edit` and `--show`, data is kept in a temporary folder and the app does not steal focus.
 
-### Versionamento
+### Versioning
 
-- A versão fica em `Cargo.toml` (hoje, `1.2.0`) e vai para o Info.plist.
-- O bundle identifier é `com.shiddo.kirei`.
+- The version lives in `Cargo.toml` (currently `1.2.0`) and is written to the Info.plist.
+- The bundle identifier is `com.shiddo.kirei`.
 
-### Idiomas
+### Localization
 
-O app está em inglês, português (Brasil) e espanhol. Por padrão, segue o idioma do macOS. Dá para trocar em **Ajustes › Geral › Idioma** (é preciso reiniciar o app).
+Kirei ships in English, Portuguese (Brazil) and Spanish. It follows the macOS language by default and can be changed in **Settings › General › Language** (requires a restart).
 
-- No código, os textos usam `l("English text")`. A chave é o próprio texto em inglês, então uma tradução que faltar aparece em inglês.
-- As traduções ficam em `Localization/<idioma>.lproj/Localizable.strings` e vão embutidas no binário.
+- In code, strings use `l("English text")`. The English text is the key itself, so any missing translation falls back to English.
+- Translations live in `Localization/<language>.lproj/Localizable.strings` and are embedded in the binary.
 
-Para incluir um idioma, crie a pasta `Localization/<idioma>.lproj` com as mesmas chaves e adicione o idioma em `src/l10n.rs`.
+To add a language, create `Localization/<language>.lproj` with the same keys and register the language in `src/l10n.rs`.
 
-## Pendências
+## Roadmap
 
-- DMG e notarização para distribuir fora do próprio Mac.
-- Traduções e número de build no bundle (hoje o Info.plist só tem a versão).
-- Gravação de tela no macOS 14 (o app usa `SCRecordingOutput`, que existe a partir do macOS 15).
-- Windows e Linux.
+- Signed and notarized DMG for distribution beyond local builds.
+- Localized bundle metadata and a build number in the Info.plist (currently version only).
+- Screen recording on macOS 14 (Kirei uses `SCRecordingOutput`, available from macOS 15).
+- Windows and Linux support.
 
-## Contribuindo
+## Contributing
 
-Contribuições são bem-vindas: correções, traduções, ideias e relatos de bug. Leia o [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir um pull request.
+Contributions are welcome: bug fixes, translations, ideas and bug reports. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
-Para relatar um bug, use os [templates de issue](https://github.com/shiddo-tech/kirei/issues/new/choose). Se o app travou, anexe os relatórios de `~/Library/Logs/Kirei`.
+To report a bug, use the [issue templates](https://github.com/shiddo-tech/kirei/issues/new/choose). If the app crashed, attach the reports from `~/Library/Logs/Kirei`.
 
-## Licença
+## License
 
-Distribuído sob a [licença MIT](LICENSE).
+Released under the [MIT License](LICENSE).
 
 ---
 
 <div align="center">
 
-**Kirei** é um projeto open source da **Shiddo**.<br>
-© 2026 Shiddo. Licença MIT.
+**Kirei** is an open-source project by **Shiddo**.<br>
+© 2026 Shiddo. Released under the MIT License.
 
 </div>

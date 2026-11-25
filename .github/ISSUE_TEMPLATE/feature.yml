@@ -1,21 +1,21 @@
-name: Sugestão
-description: Uma ideia de funcionalidade ou melhoria
+name: Feature request
+description: Suggest a new feature or improvement
 labels: [enhancement]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Qual problema isso resolve?
-      description: Descreva a situação em que você sentiu falta disso.
+      label: What problem does this solve?
+      description: Describe the situation where you felt something was missing.
     validations:
       required: true
   - type: textarea
     id: idea
     attributes:
-      label: Como você imagina a solução?
+      label: What would the ideal solution look like?
     validations:
       required: true
   - type: textarea
     id: alternatives
     attributes:
-      label: Alternativas que você já tentou
+      label: Alternatives you've tried
