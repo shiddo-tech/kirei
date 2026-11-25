@@ -53,11 +53,11 @@ pub fn init(preferred: Option<&str>) {
         })
         .unwrap_or(Language::English);
     let source = match lang {
-        Language::English => include_str!("../../Localization/en.lproj/Localizable.strings"),
+        Language::English => include_str!("../Localization/en.lproj/Localizable.strings"),
         Language::Portuguese => {
-            include_str!("../../Localization/pt-BR.lproj/Localizable.strings")
+            include_str!("../Localization/pt-BR.lproj/Localizable.strings")
         }
-        Language::Spanish => include_str!("../../Localization/es.lproj/Localizable.strings"),
+        Language::Spanish => include_str!("../Localization/es.lproj/Localizable.strings"),
     };
     TABLE.set((lang, parse(source))).ok();
 }

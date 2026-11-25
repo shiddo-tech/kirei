@@ -4,13 +4,13 @@ Obrigado pelo interesse. Este guia explica como preparar o ambiente, o que esper
 
 ## Preparar o ambiente
 
-1. Instale as Command Line Tools do Xcode: `xcode-select --install`. O Xcode completo não é necessário.
+1. Instale o [Rust](https://rustup.rs) e as Command Line Tools do Xcode (`xcode-select --install`). O Xcode completo não é necessário.
 2. Clone o repositório e compile:
 
    ```bash
    git clone https://github.com/shiddo-tech/kirei.git
    cd kirei
-   scripts/build.sh --install
+   scripts/bundle-macos.sh --install
    ```
 
 3. Se você recompila com frequência, crie o certificado local **Kirei Local Signing**. Sem ele, o macOS pede a permissão de Gravação de Tela de novo a cada build. O passo a passo está no README, em [Assinatura local e permissões](README.md#assinatura-local-e-permissões).
@@ -21,16 +21,16 @@ Você não precisa de conta de desenvolvedor da Apple para contribuir.
 
 - Para mudanças grandes (funcionalidade nova, refatoração, troca de comportamento), abra uma issue antes. Assim combinamos a abordagem e ninguém perde trabalho.
 - Mantenha cada PR focado em um assunto.
-- Confirme que `swift build` compila sem erros.
-- Teste no `.app` gerado pelo `scripts/build.sh`, e não no binário solto em `.build/`. O binário solto não tem Info.plist, ícone nem traduções.
-- Se mexer no renderizador ou na captura com rolagem, rode os autotestes descritos no README, em [Autotestes](README.md#autotestes).
+- Confirme que `cargo build` compila e que `cargo test` passa.
+- Teste no `.app` gerado pelo `scripts/bundle-macos.sh`. Com `cargo run`, a permissão de Gravação de Tela fica com o terminal.
+- Se mexer no renderizador ou na captura com rolagem, use os modos de teste descritos no README, em [Modos de teste](README.md#modos-de-teste).
 - Em mudanças visuais, anexe capturas de antes e depois no PR.
 
 ## Estilo de código
 
-- Siga o estilo dos arquivos ao redor: Swift e SwiftUI, sem dependências externas.
+- Siga o estilo dos arquivos ao redor. Rode `cargo fmt` antes de commitar e evite dependências novas sem combinar numa issue.
 - Escreva comentários só quando o código sozinho não explica a regra, como um contorno de bug do macOS ou uma restrição externa.
-- Todo texto visível para o usuário passa por `L("English text")`. A chave é o texto em inglês.
+- Todo texto visível para o usuário passa por `l("English text")`. A chave é o texto em inglês.
 
 ## Traduções
 

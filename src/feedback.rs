@@ -90,10 +90,7 @@ fn play(sound: Sound) {
     }
     #[cfg(target_os = "macos")]
     crate::platform::play_sound(sound as u8, || match sound {
-        Sound::Voice => (
-            include_bytes!("../../Resources/kirei-voice.wav").to_vec(),
-            0.4,
-        ),
+        Sound::Voice => (include_bytes!("../Resources/kirei-voice.wav").to_vec(), 0.4),
         Sound::Shutter => (shutter(), 0.55),
         Sound::Copy => (copy(), 0.45),
         Sound::Tick => (tick(), 0.35),

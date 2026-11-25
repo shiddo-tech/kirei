@@ -26,17 +26,15 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "target/$PROFILE/kirei" "$APP/Contents/MacOS/Kirei"
 
-ICON="../build/AppIcon.icns"
-if [[ ! -f "$ICON" ]]; then
+ICON="target/AppIcon.icns"
+if [[ ! -f "$ICON" || assets/icon.png -nt "$ICON" ]]; then
   ICONSET="target/AppIcon.iconset"
   mkdir -p "$ICONSET"
-  swift ../scripts/make-icon.swift target/icon-1024.png
   for s in 16 32 128 256 512; do
-    sips -z $s $s target/icon-1024.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
+    sips -z $s $s assets/icon.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
     d=$((s * 2))
-    sips -z $d $d target/icon-1024.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
+    sips -z $d $d assets/icon.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
   done
-  ICON="target/AppIcon.icns"
   iconutil -c icns "$ICONSET" -o "$ICON"
 fi
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"

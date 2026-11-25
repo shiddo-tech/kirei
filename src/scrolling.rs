@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use gpui::{
     App, AsyncApp, Bounds, Context, Global, Pixels, Task, Window, WindowHandle, canvas, div, hsla,
-    outline, point, prelude::*, px, size,
+    point, prelude::*, px, size,
 };
 
 use crate::capture::{self, Captured, RegionGrabber};
@@ -140,11 +140,7 @@ impl Render for Border {
             canvas(
                 |_, _, _| (),
                 move |bounds, _, window, _| {
-                    window.paint_quad(
-                        outline(bounds, accent, gpui::BorderStyle::Dashed)
-                            .corner_radii(px(4.))
-                            .border_widths(px(2.)),
-                    );
+                    crate::ui::paint_dashed_frame(bounds, accent, window);
                 },
             )
             .size_full(),

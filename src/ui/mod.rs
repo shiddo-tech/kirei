@@ -199,3 +199,83 @@ pub fn popup_options(bounds: gpui::Bounds<gpui::Pixels>, cx: &gpui::App) -> gpui
         ..Default::default()
     }
 }
+
+/// Dashed frame with solid corners. A plain dashed quad lets the corners fall into gaps, so each
+/// corner is an L with the rounded join and the dashes in between are spread to fill each side.
+pub fn paint_dashed_frame(bounds: gpui::Bounds<gpui::Pixels>, color: Hsla, window: &mut Window) {
+    use gpui::{BorderStyle, Bounds, Corners, Edges, fill, outline, point, size};
+    const WIDTH: f32 = 2.;
+    const RADIUS: f32 = 4.;
+    const DASH: f32 = 6.;
+    const GAP: f32 = 4.;
+
+    let (x, y) = (f32::from(bounds.origin.x), f32::from(bounds.origin.y));
+    let (w, h) = (f32::from(bounds.size.width), f32::from(bounds.size.height));
+    let arm = (RADIUS + DASH).min(w / 2.).min(h / 2.);
+    let rect =
+        |x: f32, y: f32, w: f32, h: f32| Bounds::new(point(px(x), px(y)), size(px(w), px(h)));
+    let edges = |top: f32, right: f32, bottom: f32, left: f32| Edges {
+        top: px(top),
+        right: px(right),
+        bottom: px(bottom),
+        left: px(left),
+    };
+    let corners = [
+        (
+            rect(x, y, arm, arm),
+            edges(WIDTH, 0., 0., WIDTH),
+            Corners {
+                top_left: px(RADIUS),
+                ..Default::default()
+            },
+        ),
+        (
+            rect(x + w - arm, y, arm, arm),
+            edges(WIDTH, WIDTH, 0., 0.),
+            Corners {
+                top_right: px(RADIUS),
+                ..Default::default()
+            },
+        ),
+        (
+            rect(x + w - arm, y + h - arm, arm, arm),
+            edges(0., WIDTH, WIDTH, 0.),
+            Corners {
+                bottom_right: px(RADIUS),
+                ..Default::default()
+            },
+        ),
+        (
+            rect(x, y + h - arm, arm, arm),
+            edges(0., 0., WIDTH, WIDTH),
+            Corners {
+                bottom_left: px(RADIUS),
+                ..Default::default()
+            },
+        ),
+    ];
+    for (b, e, c) in corners {
+        window.paint_quad(
+            outline(b, color, BorderStyle::Solid)
+                .border_widths(e)
+                .corner_radii(c),
+        );
+    }
+
+    // Dashes between the corner arms, with the gaps stretched so both ends of a side match.
+    let spread = |length: f32| -> Vec<f32> {
+        let n = ((length - GAP) / (DASH + GAP)).round().max(0.) as usize;
+        let gap = (length - n as f32 * DASH) / (n as f32 + 1.);
+        (0..n).map(|i| gap + i as f32 * (DASH + gap)).collect()
+    };
+    for offset in spread(w - 2. * arm) {
+        let sx = x + arm + offset;
+        window.paint_quad(fill(rect(sx, y, DASH, WIDTH), color));
+        window.paint_quad(fill(rect(sx, y + h - WIDTH, DASH, WIDTH), color));
+    }
+    for offset in spread(h - 2. * arm) {
+        let sy = y + arm + offset;
+        window.paint_quad(fill(rect(x, sy, WIDTH, DASH), color));
+        window.paint_quad(fill(rect(x + w - WIDTH, sy, WIDTH, DASH), color));
+    }
+}

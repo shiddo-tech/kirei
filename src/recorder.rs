@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use gpui::{
     Animation, AnimationExt, App, AsyncApp, Bounds, Context, Global, MouseButton, MouseDownEvent,
     MouseMoveEvent, Pixels, Point, RenderImage, Task, Window, WindowHandle, WindowOptions, canvas,
-    div, hsla, img, outline, point, prelude::*, px, size,
+    div, hsla, img, point, prelude::*, px, size,
 };
 use smallvec::smallvec;
 
@@ -203,7 +203,7 @@ fn show_chrome(rect: Bounds<Pixels>, cx: &mut App) {
         })
         .ok();
     let visible = platform::visible_frame_at_mouse();
-    let panel = size(px(176.), px(44.));
+    let panel = size(px(200.), px(44.));
     let (v_top, v_bottom) = (visible.origin.y, visible.origin.y + visible.size.height);
     let mut origin = point(
         rect.origin.x + (rect.size.width - panel.width) / 2.,
@@ -253,11 +253,7 @@ impl Render for Border {
             canvas(
                 |_, _, _| (),
                 move |bounds, _, window, _| {
-                    window.paint_quad(
-                        outline(bounds, color, gpui::BorderStyle::Dashed)
-                            .corner_radii(px(4.))
-                            .border_widths(px(2.)),
-                    );
+                    crate::ui::paint_dashed_frame(bounds, color, window);
                 },
             )
             .size_full(),
@@ -341,6 +337,8 @@ impl Render for Controls {
                 .child(
                     div()
                         .id("stop")
+                        .flex_none()
+                        .whitespace_nowrap()
                         .cursor_pointer()
                         .px(px(10.))
                         .py(px(5.))
