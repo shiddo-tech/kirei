@@ -146,8 +146,7 @@ final class ScrollingCapture {
         b.level = .statusBar
         b.isReleasedWhenClosed = false
         b.contentView = NSHostingView(rootView:
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            DashedFrame(color: .accentColor)
         )
         b.orderFrontRegardless()
         border = b

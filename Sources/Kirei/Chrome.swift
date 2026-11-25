@@ -123,3 +123,63 @@ enum StyleThumbnails {
         return img
     }
 }
+
+/// Dashed frame whose dashes are fitted to each side, so every corner is drawn solid.
+/// A single dash pattern around a rounded rect lets the corners fall into gaps.
+struct DashedFrame: View {
+    var color: Color
+    var lineWidth: CGFloat = 2
+    var dash: CGFloat = 6
+    var gap: CGFloat = 4
+    var radius: CGFloat = 4
+
+    var body: some View {
+        Canvas { ctx, size in
+            let r = CGRect(origin: .zero, size: size).insetBy(dx: lineWidth / 2, dy: lineWidth / 2)
+            let c = min(radius, r.width / 2, r.height / 2)
+            let solid = StrokeStyle(lineWidth: lineWidth, lineCap: .butt)
+
+            ctx.stroke(Self.arcsOnly(r, c), with: .color(color), style: solid)
+
+            let sides: [(CGPoint, CGPoint)] = [
+                (CGPoint(x: r.minX + c, y: r.minY), CGPoint(x: r.maxX - c, y: r.minY)),
+                (CGPoint(x: r.maxX, y: r.minY + c), CGPoint(x: r.maxX, y: r.maxY - c)),
+                (CGPoint(x: r.maxX - c, y: r.maxY), CGPoint(x: r.minX + c, y: r.maxY)),
+                (CGPoint(x: r.minX, y: r.maxY - c), CGPoint(x: r.minX, y: r.minY + c)),
+            ]
+            var dashes = Path()
+            for (a, b) in sides {
+                let length = hypot(b.x - a.x, b.y - a.y)
+                guard length > 0 else { continue }
+                let ux = (b.x - a.x) / length, uy = (b.y - a.y) / length
+                // Both ends start and finish on a dash: stretch the gaps so the count fits exactly.
+                let n = max(1, Int(((length + gap) / (dash + gap)).rounded()))
+                let d = n < 2 ? length : min(dash, length)
+                let step = n < 2 ? 0 : (length - d) / CGFloat(n - 1)
+                for i in 0..<n {
+                    let t = CGFloat(i) * step
+                    dashes.move(to: CGPoint(x: a.x + ux * t, y: a.y + uy * t))
+                    dashes.addLine(to: CGPoint(x: a.x + ux * (t + d), y: a.y + uy * (t + d)))
+                }
+            }
+            ctx.stroke(dashes, with: .color(color), style: solid)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private static func arcsOnly(_ r: CGRect, _ c: CGFloat) -> Path {
+        var p = Path()
+        let arcs: [(CGPoint, Double)] = [
+            (CGPoint(x: r.minX + c, y: r.minY + c), 180),
+            (CGPoint(x: r.maxX - c, y: r.minY + c), 270),
+            (CGPoint(x: r.maxX - c, y: r.maxY - c), 0),
+            (CGPoint(x: r.minX + c, y: r.maxY - c), 90),
+        ]
+        for (center, start) in arcs {
+            let a = CGFloat(start * Double.pi / 180)
+            p.move(to: CGPoint(x: center.x + c * cos(a), y: center.y + c * sin(a)))
+            p.addArc(center: center, radius: c, startAngle: .degrees(start), endAngle: .degrees(start + 90), clockwise: false)
+        }
+        return p
+    }
+}

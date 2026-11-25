@@ -1074,6 +1074,8 @@ private struct BackgroundPicker: View {
             .aspectRatio(1, contentMode: .fit)
             .overlay(content())
             .clipShape(RoundedRectangle(cornerRadius: 6))
+            // The image layer's clip isn't antialiased at fractional swatch widths; flattening fixes the jagged corners.
+            .drawingGroup()
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(.primary.opacity(0.12), lineWidth: 0.5))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: 2)
                 .padding(-3).opacity(selected ? 1 : 0))

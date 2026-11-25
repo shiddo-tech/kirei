@@ -171,13 +171,12 @@ final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         b.isReleasedWhenClosed = false
         b.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         b.contentView = NSHostingView(rootView:
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .strokeBorder(Color.red.opacity(0.85), style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            DashedFrame(color: .red.opacity(0.85))
         )
         b.orderFrontRegardless()
         border = b
 
-        let size = NSSize(width: 176, height: 44)
+        let size = NSSize(width: 200, height: 44)
         let screen = NSScreen.screens.first { $0.frame.intersects(rect) } ?? NSScreen.main
         let vf = screen?.visibleFrame ?? rect
         var origin = NSPoint(x: rect.midX - size.width / 2, y: rect.minY - size.height - 12)
@@ -222,6 +221,8 @@ private struct RecordingControls: View {
             Button(action: onStop) {
                 Label(L("Stop"), systemImage: "stop.fill")
                     .font(.callout.weight(.semibold))
+                    .lineLimit(1)
+                    .fixedSize()
                     .padding(.horizontal, 10).padding(.vertical, 5)
                     .background(.red, in: Capsule())
                     .foregroundStyle(.white)
@@ -229,9 +230,9 @@ private struct RecordingControls: View {
             .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
-        .frame(width: 172, height: 40)
+        .frame(width: 196, height: 40)
         .kireiGlass(in: Capsule())
-        .frame(width: 176, height: 44)
+        .frame(width: 200, height: 44)
     }
 }
 
